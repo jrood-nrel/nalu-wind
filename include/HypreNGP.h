@@ -30,13 +30,13 @@ namespace nalu_hypre {
 #ifdef NALU_HYPRE_USING_GPU
 
 inline void
-nalu_hypre_initialize()
+hypre_initialize()
 {
   NALU_HYPRE_Init();
 }
 
 inline void
-nalu_hypre_set_params(YAML::Node nodes)
+hypre_set_params(YAML::Node nodes)
 {
 #ifdef NALU_HYPRE_USING_DEVICE_POOL
   /* device pool allocator */
@@ -95,7 +95,7 @@ nalu_hypre_set_params(YAML::Node nodes)
 }
 
 inline void
-nalu_hypre_set_params()
+hypre_set_params()
 {
 #ifdef NALU_HYPRE_USING_DEVICE_POOL
   /* device pool allocator */
@@ -121,7 +121,7 @@ nalu_hypre_set_params()
 }
 
 inline void
-nalu_hypre_finalize()
+hypre_finalize()
 {
   NALU_HYPRE_Finalize();
 }
@@ -129,22 +129,22 @@ nalu_hypre_finalize()
 #else
 
 inline void
-nalu_hypre_initialize()
+hypre_initialize()
 {
 }
 
 inline void
-nalu_hypre_set_params(YAML::Node nodes)
+hypre_set_params(YAML::Node nodes)
 {
 }
 
 inline void
-nalu_hypre_set_params()
+hypre_set_params()
 {
 }
 
 inline void
-nalu_hypre_finalize()
+hypre_finalize()
 {
 }
 
