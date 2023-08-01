@@ -7,7 +7,7 @@
 // for more details.
 //
 
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
 
 #include <LinearSolverConfig.h>
 #include <NaluEnv.h>
@@ -33,7 +33,7 @@ HypreLinearSolverConfig::HypreLinearSolverConfig() : LinearSolverConfig() {}
 void
 HypreLinearSolverConfig::load(const YAML::Node& node)
 {
-  const std::string hypre_check("hypre_");
+  const std::string nalu_hypre_check("nalu_hypre_");
   name_ = node["name"].as<std::string>();
   method_ = node["method"].as<std::string>();
   get_if_present(node, "preconditioner", precond_, std::string("none"));
@@ -60,10 +60,10 @@ HypreLinearSolverConfig::load(const YAML::Node& node)
   get_if_present(
     node, "segregated_solver", useSegregatedSolver_, useSegregatedSolver_);
   get_if_present(
-    node, "simple_hypre_matrix_assemble", simpleHypreMatrixAssemble_,
+    node, "simple_nalu_hypre_matrix_assemble", simpleHypreMatrixAssemble_,
     simpleHypreMatrixAssemble_);
   get_if_present(
-    node, "dump_hypre_matrix_stats", dumpHypreMatrixStats_,
+    node, "dump_nalu_hypre_matrix_stats", dumpHypreMatrixStats_,
     dumpHypreMatrixStats_);
   get_if_present(
     node, "reuse_linear_system", reuseLinSysIfPossible_,
@@ -77,51 +77,51 @@ HypreLinearSolverConfig::load(const YAML::Node& node)
     absTol_ = node["absolute_tolerance"].as<double>();
   }
 
-  isHypreSolver_ = (method_.compare(0, hypre_check.length(), hypre_check) == 0);
+  isHypreSolver_ = (method_.compare(0, nalu_hypre_check.length(), nalu_hypre_check) == 0);
 
   if ((precond_ == "none") && !isHypreSolver_)
     throw std::runtime_error("Invalid combination of Hypre preconditioner and "
                              "solver method specified.");
 
-  // Determine how we are parsing options for hypre solvers
-  std::string hypreOptsFile;
-  get_if_present_no_default(node, "hypre_cfg_file", hypreOptsFile);
+  // Determine how we are parsing options for nalu_hypre solvers
+  std::string nalu_hypreOptsFile;
+  get_if_present_no_default(node, "nalu_hypre_cfg_file", nalu_hypreOptsFile);
   YAML::Node doc, hnode;
-  if (hypreOptsFile.empty()) {
-    // No hypre configuration file provided, parse options from Nalu-Wind input
+  if (nalu_hypreOptsFile.empty()) {
+    // No nalu_hypre configuration file provided, parse options from Nalu-Wind input
     // file
     hnode = node;
   } else {
     // Hypre configuration file available, parse options from a specific node
-    // within the configuration file. Default is `hypre`, but can be tailored
-    // for `hypre_elliptic`, `hypre_momentum`, `hypre_scalar` and so on.
-    std::string hypreOptsNode{"hypre"};
-    get_if_present_no_default(node, "hypre_cfg_node", hypreOptsNode);
-    doc = YAML::LoadFile(hypreOptsFile.c_str());
-    if (doc[hypreOptsNode])
-      hnode = doc[hypreOptsNode];
+    // within the configuration file. Default is `nalu_hypre`, but can be tailored
+    // for `nalu_hypre_elliptic`, `nalu_hypre_momentum`, `nalu_hypre_scalar` and so on.
+    std::string nalu_hypreOptsNode{"nalu_hypre"};
+    get_if_present_no_default(node, "nalu_hypre_cfg_node", nalu_hypreOptsNode);
+    doc = YAML::LoadFile(nalu_hypreOptsFile.c_str());
+    if (doc[nalu_hypreOptsNode])
+      hnode = doc[nalu_hypreOptsNode];
     else
       throw std::runtime_error(
-        "HypreLinearSolverConfig: Cannot find configuration " + hypreOptsNode +
-        " in file " + hypreOptsFile);
+        "HypreLinearSolverConfig: Cannot find configuration " + nalu_hypreOptsNode +
+        " in file " + nalu_hypreOptsFile);
   }
 
-  if (method_ == "hypre_boomerAMG") {
+  if (method_ == "nalu_hypre_boomerAMG") {
     boomerAMG_solver_config(hnode);
   } else {
     funcParams_.clear();
 
     // Configure preconditioner (must always be Hypre)
-    configure_hypre_preconditioner(hnode);
+    configure_nalu_hypre_preconditioner(hnode);
 
     if (isHypreSolver_) {
       paramsPrecond_->set("SolveOrPrecondition", Ifpack2::Hypre::Solver);
-      configure_hypre_solver(hnode);
+      configure_nalu_hypre_solver(hnode);
     } else {
-      throw std::runtime_error("Non-hypre solver option not supported yet");
+      throw std::runtime_error("Non-nalu_hypre solver option not supported yet");
     }
 
-    // Assign hypre config function calls
+    // Assign nalu_hypre config function calls
     int numFunctions = funcParams_.size();
     paramsPrecond_->set("NumFunctions", numFunctions);
     paramsPrecond_->set<Teuchos::RCP<Ifpack2::FunctionParameter>*>(
@@ -144,29 +144,29 @@ HypreLinearSolverConfig::boomerAMG_solver_config(const YAML::Node& node)
   // Setup AMG parameters
   funcParams_.resize(10);
   funcParams_[0] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetPrintLevel,
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetPrintLevel,
     outputLevel_)); // print AMG solution info
   funcParams_[1] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetCoarsenType,
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetCoarsenType,
     bamgCoarsenType_)); // Falgout coarsening
   funcParams_[2] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetCycleType, bamgCycleType_));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetCycleType, bamgCycleType_));
   funcParams_[3] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetRelaxType, bamgRelaxType_));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetRelaxType, bamgRelaxType_));
   funcParams_[4] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetRelaxOrder, bamgRelaxOrder_));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetRelaxOrder, bamgRelaxOrder_));
   funcParams_[5] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetNumSweeps, bamgNumSweeps_));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetNumSweeps, bamgNumSweeps_));
   funcParams_[6] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetMaxLevels, bamgMaxLevels_));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetMaxLevels, bamgMaxLevels_));
   funcParams_[7] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetStrongThreshold,
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetStrongThreshold,
     bamgStrongThreshold_));
   funcParams_[8] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetTol,
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetTol,
     tolerance_)); // Conv tolerance
   funcParams_[9] = Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BoomerAMGSetMaxIter,
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BoomerAMGSetMaxIter,
     maxIterations_)); // Maximum number of iterations
 
   // Populate the parameter list for configuration
@@ -207,60 +207,60 @@ HypreLinearSolverConfig::boomerAMG_precond_config(const YAML::Node& node)
   get_if_present(node, "bamg_debug", debug, debug);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetPrintLevel,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetPrintLevel,
     output_level))); // print AMG solution info
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetLogging,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetLogging,
     logging))); // print AMG solution info
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetDebugFlag,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetDebugFlag,
     debug))); // set debug flag
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetLogging,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetLogging,
     output_level))); // print AMG solution info
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetCoarsenType,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetCoarsenType,
     bamgCoarsenType_))); // Falgout coarsening
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetCycleType, bamgCycleType_)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetCycleType, bamgCycleType_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetRelaxType, bamgRelaxType_)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetRelaxType, bamgRelaxType_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetRelaxOrder, bamgRelaxOrder_)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetRelaxOrder, bamgRelaxOrder_)));
 
   if (
     node["bamg_num_down_sweeps"] && node["bamg_num_up_sweeps"] &&
     node["bamg_num_coarse_sweeps"]) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetCycleNumSweeps,
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetCycleNumSweeps,
       bamgNumDownSweeps_, 1)));
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetCycleNumSweeps, bamgNumUpSweeps_,
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetCycleNumSweeps, bamgNumUpSweeps_,
       2)));
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetCycleNumSweeps,
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetCycleNumSweeps,
       bamgNumCoarseSweeps_, 3)));
   } else {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetNumSweeps, bamgNumSweeps_)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetNumSweeps, bamgNumSweeps_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetMaxLevels, bamgMaxLevels_)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetMaxLevels, bamgMaxLevels_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetStrongThreshold,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetStrongThreshold,
     bamgStrongThreshold_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetTol,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetTol,
     0.0))); // Conv tolerance
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetMaxIter,
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetMaxIter,
     1))); // Maximum number of iterations
 
   if (node["bamg_non_galerkin_tol"]) {
     double non_galerkin_tol = node["bamg_non_galerkin_tol"].as<double>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetNonGalerkinTol,
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetNonGalerkinTol,
       non_galerkin_tol)));
 
     if (node["bamg_non_galerkin_level_tols"]) {
@@ -274,7 +274,7 @@ HypreLinearSolverConfig::boomerAMG_precond_config(const YAML::Node& node)
 
       for (size_t i = 0; i < levels.size(); i++) {
         funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-          Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetLevelNonGalerkinTol, tol[i],
+          Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetLevelNonGalerkinTol, tol[i],
           levels[i])));
       }
     }
@@ -283,45 +283,45 @@ HypreLinearSolverConfig::boomerAMG_precond_config(const YAML::Node& node)
   if (node["bamg_variant"]) {
     int int_value = node["bamg_variant"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetVariant, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetVariant, int_value)));
   }
 
   if (node["bamg_keep_transpose"]) {
     int int_value = node["bamg_keep_transpose"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetKeepTranspose, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetKeepTranspose, int_value)));
   }
 
   if (node["bamg_interp_type"]) {
     int int_value = node["bamg_interp_type"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetInterpType, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetInterpType, int_value)));
   }
 
   if (node["bamg_smooth_type"]) {
     int smooth_type = node["bamg_smooth_type"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetSmoothType, smooth_type)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetSmoothType, smooth_type)));
 
     // Process Euclid smoother parameters
     if (smooth_type == 9) {
       if (node["bamg_euclid_file"]) {
         bamgEuclidFile_ = node["bamg_euclid_file"].as<std::string>();
         funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-          Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetEuclidFile,
+          Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetEuclidFile,
           const_cast<char*>(bamgEuclidFile_.c_str()))));
       }
 
       if (node["bamg_smooth_num_levels"]) {
         int int_value = node["bamg_smooth_num_levels"].as<int>();
         funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-          Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetSmoothNumLevels,
+          Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetSmoothNumLevels,
           int_value)));
       }
       if (node["bamg_smooth_num_sweeps"]) {
         int int_value = node["bamg_smooth_num_sweeps"].as<int>();
         funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-          Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetSmoothNumSweeps,
+          Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetSmoothNumSweeps,
           int_value)));
       }
     }
@@ -330,37 +330,37 @@ HypreLinearSolverConfig::boomerAMG_precond_config(const YAML::Node& node)
   if (node["bamg_min_coarse_size"]) {
     int int_value = node["bamg_min_coarse_size"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetMinCoarseSize, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetMinCoarseSize, int_value)));
   }
   if (node["bamg_max_coarse_size"]) {
     int int_value = node["bamg_max_coarse_size"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetMaxCoarseSize, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetMaxCoarseSize, int_value)));
   }
   if (node["bamg_pmax_elmts"]) {
     int int_value = node["bamg_pmax_elmts"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetPMaxElmts, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetPMaxElmts, int_value)));
   }
   if (node["bamg_agg_num_levels"]) {
     int int_value = node["bamg_agg_num_levels"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetAggNumLevels, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetAggNumLevels, int_value)));
   }
   if (node["bamg_agg_interp_type"]) {
     int int_value = node["bamg_agg_interp_type"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetAggInterpType, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetAggInterpType, int_value)));
   }
   if (node["bamg_agg_pmax_elmts"]) {
     int int_value = node["bamg_agg_pmax_elmts"].as<int>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetAggPMaxElmts, int_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetAggPMaxElmts, int_value)));
   }
   if (node["bamg_trunc_factor"]) {
     double float_value = node["bamg_trunc_factor"].as<double>();
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Prec, &HYPRE_BoomerAMGSetTruncFactor, float_value)));
+      Ifpack2::Hypre::Prec, &NALU_HYPRE_BoomerAMGSetTruncFactor, float_value)));
   }
 
   paramsPrecond_->set("Preconditioner", Ifpack2::Hypre::BoomerAMG);
@@ -370,7 +370,7 @@ HypreLinearSolverConfig::boomerAMG_precond_config(const YAML::Node& node)
 void
 HypreLinearSolverConfig::euclid_precond_config(const YAML::Node& node)
 {
-  // Defaults are based on recommendations from HYPRE Ref. Manual
+  // Defaults are based on recommendations from NALU_HYPRE Ref. Manual
   int level = 1;    // Assume 3-D problem, set to 4-8 for 2-D
   int bj = 0;       // 0 - PILU; 1 - Block Jacobi
   int eu_stats = 0; // write out euclid stats
@@ -384,98 +384,98 @@ HypreLinearSolverConfig::euclid_precond_config(const YAML::Node& node)
   get_if_present(node, "euclid_filename", eu_filename, eu_filename);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_EuclidSetLevel, level)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_EuclidSetLevel, level)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_EuclidSetBJ, bj)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_EuclidSetBJ, bj)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_EuclidSetStats, eu_stats)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_EuclidSetStats, eu_stats)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Prec, &HYPRE_EuclidSetMem, eu_mem)));
+    Ifpack2::Hypre::Prec, &NALU_HYPRE_EuclidSetMem, eu_mem)));
 
   paramsPrecond_->set("Preconditioner", Ifpack2::Hypre::Euclid);
   paramsPrecond_->set("SetPreconditioner", true);
 }
 
 void
-HypreLinearSolverConfig::hypre_gmres_solver_config(const YAML::Node& node)
+HypreLinearSolverConfig::nalu_hypre_gmres_solver_config(const YAML::Node& node)
 {
   int logLevel = 1;
   get_if_present(node, "log_level", logLevel, logLevel);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_GMRESSetKDim, kspace_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_GMRESSetKDim, kspace_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_GMRESSetMaxIter, maxIterations_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_GMRESSetMaxIter, maxIterations_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_GMRESSetTol, tolerance_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_GMRESSetTol, tolerance_)));
 
   if (hasAbsTol_) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Solver, &HYPRE_GMRESSetAbsoluteTol, absTol_)));
+      Ifpack2::Hypre::Solver, &NALU_HYPRE_GMRESSetAbsoluteTol, absTol_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_GMRESSetPrintLevel, outputLevel_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_GMRESSetPrintLevel, outputLevel_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_GMRESSetLogging, logLevel)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_GMRESSetLogging, logLevel)));
 
   paramsPrecond_->set("Solver", Ifpack2::Hypre::GMRES);
 }
 
 void
-HypreLinearSolverConfig::hypre_cogmres_solver_config(const YAML::Node& node)
+HypreLinearSolverConfig::nalu_hypre_cogmres_solver_config(const YAML::Node& node)
 {
   int logLevel = 1;
   get_if_present(node, "log_level", logLevel, logLevel);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetKDim, kspace_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetKDim, kspace_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetMaxIter, maxIterations_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetMaxIter, maxIterations_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetTol, tolerance_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetTol, tolerance_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetCGS, sync_alg_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetCGS, sync_alg_)));
 
   if (hasAbsTol_) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetAbsoluteTol, absTol_)));
+      Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetAbsoluteTol, absTol_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetPrintLevel, outputLevel_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetPrintLevel, outputLevel_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_COGMRESSetLogging, logLevel)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_COGMRESSetLogging, logLevel)));
   paramsPrecond_->set("Solver", Ifpack2::Hypre::COGMRES);
 }
 
 void
-HypreLinearSolverConfig::hypre_flexgmres_solver_config(const YAML::Node& node)
+HypreLinearSolverConfig::nalu_hypre_flexgmres_solver_config(const YAML::Node& node)
 {
   int logLevel = 1;
   get_if_present(node, "log_level", logLevel, logLevel);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_FlexGMRESSetKDim, kspace_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_FlexGMRESSetKDim, kspace_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_FlexGMRESSetMaxIter, maxIterations_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_FlexGMRESSetMaxIter, maxIterations_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_FlexGMRESSetTol, tolerance_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_FlexGMRESSetTol, tolerance_)));
 
   if (hasAbsTol_) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Solver, &HYPRE_FlexGMRESSetAbsoluteTol, absTol_)));
+      Ifpack2::Hypre::Solver, &NALU_HYPRE_FlexGMRESSetAbsoluteTol, absTol_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_FlexGMRESSetPrintLevel, outputLevel_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_FlexGMRESSetPrintLevel, outputLevel_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_FlexGMRESSetLogging, logLevel)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_FlexGMRESSetLogging, logLevel)));
   paramsPrecond_->set("Solver", Ifpack2::Hypre::FlexGMRES);
 }
 
 void
-HypreLinearSolverConfig::hypre_lgmres_solver_config(const YAML::Node& node)
+HypreLinearSolverConfig::nalu_hypre_lgmres_solver_config(const YAML::Node& node)
 {
   int logLevel = 1;
   int augDim = 2;
@@ -483,74 +483,74 @@ HypreLinearSolverConfig::hypre_lgmres_solver_config(const YAML::Node& node)
   get_if_present(node, "lgmres_aug_dim", augDim, augDim);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetKDim, kspace_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetKDim, kspace_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetAugDim, augDim)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetAugDim, augDim)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetMaxIter, maxIterations_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetMaxIter, maxIterations_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetTol, tolerance_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetTol, tolerance_)));
 
   if (hasAbsTol_) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetAbsoluteTol, absTol_)));
+      Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetAbsoluteTol, absTol_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetPrintLevel, outputLevel_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetPrintLevel, outputLevel_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_LGMRESSetLogging, logLevel)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_LGMRESSetLogging, logLevel)));
   paramsPrecond_->set("Solver", Ifpack2::Hypre::LGMRES);
 }
 
 void
-HypreLinearSolverConfig::hypre_bicgstab_solver_config(const YAML::Node& node)
+HypreLinearSolverConfig::nalu_hypre_bicgstab_solver_config(const YAML::Node& node)
 {
   int logLevel = 1;
   get_if_present(node, "log_level", logLevel, logLevel);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BiCGSTABSetMaxIter, maxIterations_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BiCGSTABSetMaxIter, maxIterations_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BiCGSTABSetTol, tolerance_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BiCGSTABSetTol, tolerance_)));
 
   if (hasAbsTol_) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Solver, &HYPRE_BiCGSTABSetAbsoluteTol, absTol_)));
+      Ifpack2::Hypre::Solver, &NALU_HYPRE_BiCGSTABSetAbsoluteTol, absTol_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BiCGSTABSetPrintLevel, outputLevel_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BiCGSTABSetPrintLevel, outputLevel_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_BiCGSTABSetLogging, logLevel)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_BiCGSTABSetLogging, logLevel)));
   paramsPrecond_->set("Solver", Ifpack2::Hypre::BiCGSTAB);
 }
 
 void
-HypreLinearSolverConfig::hypre_pcg_solver_config(const YAML::Node& node)
+HypreLinearSolverConfig::nalu_hypre_pcg_solver_config(const YAML::Node& node)
 {
   int logLevel = 1;
   get_if_present(node, "log_level", logLevel, logLevel);
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_PCGSetMaxIter, maxIterations_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_PCGSetMaxIter, maxIterations_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_PCGSetTol, tolerance_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_PCGSetTol, tolerance_)));
 
   if (hasAbsTol_) {
     funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-      Ifpack2::Hypre::Solver, &HYPRE_PCGSetAbsoluteTol, absTol_)));
+      Ifpack2::Hypre::Solver, &NALU_HYPRE_PCGSetAbsoluteTol, absTol_)));
   }
 
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_PCGSetPrintLevel, outputLevel_)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_PCGSetPrintLevel, outputLevel_)));
   funcParams_.push_back(Teuchos::rcp(new Ifpack2::FunctionParameter(
-    Ifpack2::Hypre::Solver, &HYPRE_PCGSetLogging, logLevel)));
+    Ifpack2::Hypre::Solver, &NALU_HYPRE_PCGSetLogging, logLevel)));
   paramsPrecond_->set("Solver", Ifpack2::Hypre::PCG);
 }
 
 void
-HypreLinearSolverConfig::configure_hypre_preconditioner(const YAML::Node& node)
+HypreLinearSolverConfig::configure_nalu_hypre_preconditioner(const YAML::Node& node)
 {
   if (precond_ == "boomerAMG") {
     boomerAMG_precond_config(node);
@@ -560,27 +560,27 @@ HypreLinearSolverConfig::configure_hypre_preconditioner(const YAML::Node& node)
     paramsPrecond_->set("SetPreconditioner", false);
   } else {
     throw std::runtime_error(
-      "Invalid HYPRE preconditioner specified: " + precond_);
+      "Invalid NALU_HYPRE preconditioner specified: " + precond_);
   }
 }
 
 void
-HypreLinearSolverConfig::configure_hypre_solver(const YAML::Node& node)
+HypreLinearSolverConfig::configure_nalu_hypre_solver(const YAML::Node& node)
 {
-  if (method_ == "hypre_gmres") {
-    hypre_gmres_solver_config(node);
-  } else if (method_ == "hypre_cogmres") {
-    hypre_cogmres_solver_config(node);
-  } else if (method_ == "hypre_lgmres") {
-    hypre_lgmres_solver_config(node);
-  } else if (method_ == "hypre_flexgmres") {
-    hypre_flexgmres_solver_config(node);
-  } else if (method_ == "hypre_pcg") {
-    hypre_pcg_solver_config(node);
-  } else if (method_ == "hypre_bicgstab") {
-    hypre_bicgstab_solver_config(node);
+  if (method_ == "nalu_hypre_gmres") {
+    nalu_hypre_gmres_solver_config(node);
+  } else if (method_ == "nalu_hypre_cogmres") {
+    nalu_hypre_cogmres_solver_config(node);
+  } else if (method_ == "nalu_hypre_lgmres") {
+    nalu_hypre_lgmres_solver_config(node);
+  } else if (method_ == "nalu_hypre_flexgmres") {
+    nalu_hypre_flexgmres_solver_config(node);
+  } else if (method_ == "nalu_hypre_pcg") {
+    nalu_hypre_pcg_solver_config(node);
+  } else if (method_ == "nalu_hypre_bicgstab") {
+    nalu_hypre_bicgstab_solver_config(node);
   } else {
-    throw std::runtime_error("Invalid HYPRE solver specified: " + method_);
+    throw std::runtime_error("Invalid NALU_HYPRE solver specified: " + method_);
   }
 }
 

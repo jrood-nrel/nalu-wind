@@ -7,18 +7,18 @@
 // for more details.
 //
 
-#ifndef HYPREDIRECTSOLVER_H
-#define HYPREDIRECTSOLVER_H
+#ifndef NALU_HYPREDIRECTSOLVER_H
+#define NALU_HYPREDIRECTSOLVER_H
 
 #include "LinearSolver.h"
 
 #include "XSDKHypreInterface.h"
 
-#include "HYPRE_IJ_mv.h"
-#include "HYPRE_parcsr_ls.h"
-#include "HYPRE_parcsr_mv.h"
+#include "NALU_HYPRE_IJ_mv.h"
+#include "NALU_HYPRE_parcsr_ls.h"
+#include "NALU_HYPRE_parcsr_mv.h"
 #include "krylov.h"
-#include "HYPRE.h"
+#include "NALU_HYPRE.h"
 
 namespace sierra {
 namespace nalu {
@@ -34,7 +34,7 @@ namespace nalu {
  *  sierra::nalu::HypreLinearSolverConfig
  *
  *  Users are referred to the [Hypre Reference
- *  Manual](https://computation.llnl.gov/projects/hypre-scalable-linear-solvers-multigrid-methods/software)
+ *  Manual](https://computation.llnl.gov/projects/nalu_hypre-scalable-linear-solvers-multigrid-methods/software)
  *  for detailed documentation on the Hypre functions and data structures used
  *  in this class.
  */
@@ -59,20 +59,20 @@ public:
   int solve(int&, double&, bool);
 
   //! Return the type of solver instance
-  virtual PetraType getType() override { return PT_HYPRE; }
+  virtual PetraType getType() override { return PT_NALU_HYPRE; }
 
   //! public API for resetting the flag for how often the preconditioner is
   //! recomputed
   virtual void set_initialize_solver_flag();
 
   //! Instance of the Hypre parallel matrix
-  mutable HYPRE_ParCSRMatrix parMat_;
+  mutable NALU_HYPRE_ParCSRMatrix parMat_;
 
   //! Instance of the Hypre parallel RHS vector
-  mutable HYPRE_ParVector parRhs_;
+  mutable NALU_HYPRE_ParVector parRhs_;
 
   //! Instance of Hypre parallel solution vector
-  mutable HYPRE_ParVector parSln_;
+  mutable NALU_HYPRE_ParVector parSln_;
 
   MPI_Comm comm_;
 
@@ -95,32 +95,32 @@ protected:
   //! Enum indicating the preconditioner type used in this simulation
   Ifpack2::Hypre::Hypre_Solver precondType_;
 
-  mutable HYPRE_Solver solver_;
+  mutable NALU_HYPRE_Solver solver_;
 
-  mutable HYPRE_Solver precond_;
+  mutable NALU_HYPRE_Solver precond_;
 
-  HypreIntType (*solverCreatePtr_)(MPI_Comm, HYPRE_Solver*);
-  HypreIntType (*solverDestroyPtr_)(HYPRE_Solver);
+  HypreIntType (*solverCreatePtr_)(MPI_Comm, NALU_HYPRE_Solver*);
+  HypreIntType (*solverDestroyPtr_)(NALU_HYPRE_Solver);
   HypreIntType (*solverSetupPtr_)(
-    HYPRE_Solver, HYPRE_ParCSRMatrix, HYPRE_ParVector, HYPRE_ParVector);
+    NALU_HYPRE_Solver, NALU_HYPRE_ParCSRMatrix, NALU_HYPRE_ParVector, NALU_HYPRE_ParVector);
   HypreIntType (*solverSolvePtr_)(
-    HYPRE_Solver, HYPRE_ParCSRMatrix, HYPRE_ParVector, HYPRE_ParVector);
+    NALU_HYPRE_Solver, NALU_HYPRE_ParCSRMatrix, NALU_HYPRE_ParVector, NALU_HYPRE_ParVector);
   HypreIntType (*solverPrecondPtr_)(
-    HYPRE_Solver,
-    HYPRE_PtrToParSolverFcn,
-    HYPRE_PtrToParSolverFcn,
-    HYPRE_Solver);
+    NALU_HYPRE_Solver,
+    NALU_HYPRE_PtrToParSolverFcn,
+    NALU_HYPRE_PtrToParSolverFcn,
+    NALU_HYPRE_Solver);
 
-  HypreIntType (*precondCreatePtr_)(MPI_Comm, HYPRE_Solver*);
-  HypreIntType (*precondDestroyPtr_)(HYPRE_Solver);
+  HypreIntType (*precondCreatePtr_)(MPI_Comm, NALU_HYPRE_Solver*);
+  HypreIntType (*precondDestroyPtr_)(NALU_HYPRE_Solver);
   HypreIntType (*precondSetupPtr_)(
-    HYPRE_Solver, HYPRE_ParCSRMatrix, HYPRE_ParVector, HYPRE_ParVector);
+    NALU_HYPRE_Solver, NALU_HYPRE_ParCSRMatrix, NALU_HYPRE_ParVector, NALU_HYPRE_ParVector);
   HypreIntType (*precondSolvePtr_)(
-    HYPRE_Solver, HYPRE_ParCSRMatrix, HYPRE_ParVector, HYPRE_ParVector);
+    NALU_HYPRE_Solver, NALU_HYPRE_ParCSRMatrix, NALU_HYPRE_ParVector, NALU_HYPRE_ParVector);
 
-  HypreIntType (*solverSetTolPtr_)(HYPRE_Solver, double);
-  HypreIntType (*solverNumItersPtr_)(HYPRE_Solver, HypreIntType*);
-  HypreIntType (*solverFinalResidualNormPtr_)(HYPRE_Solver, double*);
+  HypreIntType (*solverSetTolPtr_)(NALU_HYPRE_Solver, double);
+  HypreIntType (*solverNumItersPtr_)(NALU_HYPRE_Solver, HypreIntType*);
+  HypreIntType (*solverFinalResidualNormPtr_)(NALU_HYPRE_Solver, double*);
 
   //! Flag indicating whether a preconditioner is used. Certain solvers like
   //! BoomerAMG do not require a preconditioner.
@@ -149,4 +149,4 @@ private:
 } // namespace nalu
 } // namespace sierra
 
-#endif /* HYPREDIRECTSOLVER_H */
+#endif /* NALU_HYPREDIRECTSOLVER_H */

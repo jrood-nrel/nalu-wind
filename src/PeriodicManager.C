@@ -693,7 +693,7 @@ PeriodicManager::manage_ghosting_object()
         bulk_data.get_entity(searchKeyVector_[i].second.id());
       sendNodes.push_back(stk::mesh::EntityProc(rangeNode, domainProc));
 
-      if (realm_.hypreIsActive_) {
+      if (realm_.nalu_hypreIsActive_) {
         auto* elems = bulk_data.begin_elements(rangeNode);
         int nelems = bulk_data.num_elements(rangeNode);
         for (int ie = 0; ie < nelems; ie++)
@@ -705,7 +705,7 @@ PeriodicManager::manage_ghosting_object()
         bulk_data.get_entity(searchKeyVector_[i].first.id());
       sendNodes.push_back(stk::mesh::EntityProc(domainNode, rangeProc));
 
-      if (realm_.hypreIsActive_) {
+      if (realm_.nalu_hypreIsActive_) {
         auto* elems = bulk_data.begin_elements(domainNode);
         int nelems = bulk_data.num_elements(domainNode);
         for (int ie = 0; ie < nelems; ie++)
@@ -730,7 +730,7 @@ PeriodicManager::manage_ghosting_object()
     else
       bulk_data.destroy_ghosting(*periodicGhosting_);
     bulk_data.change_ghosting(*periodicGhosting_, sendNodes);
-    if (realm_.hypreIsActive_)
+    if (realm_.nalu_hypreIsActive_)
       bulk_data.change_ghosting(*periodicGhosting_, sendElems);
     bulk_data.modification_end();
 
@@ -809,7 +809,7 @@ PeriodicManager::ngp_periodic_parallel_communicate_field(
         1, &fieldMgr.get_field<LinSys::GlobalOrdinal>(fieldOrd));
       stk::mesh::communicate_field_data(*periodicGhosting_, fieldVec);
     }
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
     else if (theField->type_is<HypreIntType>()) {
       std::vector<stk::mesh::NgpField<HypreIntType>*> fieldVec(
         1, &fieldMgr.get_field<HypreIntType>(fieldOrd));
@@ -873,7 +873,7 @@ PeriodicManager::ngp_parallel_communicate_field(
       stk::mesh::copy_owned_to_shared(bulk_data, fieldVec, false);
       stk::mesh::communicate_field_data(bulk_data.aura_ghosting(), fieldVec);
     }
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
     else if (theField->type_is<HypreIntType>()) {
       std::vector<stk::mesh::NgpField<HypreIntType>*> fieldVec(
         1, &fieldMgr.get_field<HypreIntType>(fieldOrd));

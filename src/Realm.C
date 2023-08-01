@@ -558,8 +558,8 @@ Realm::initialize_epilog()
   compute_l2_scaling();
 
   // Now that the inactive selectors have been processed; we are ready to setup
-  // HYPRE IDs
-  set_hypre_global_id();
+  // NALU_HYPRE IDs
+  set_nalu_hypre_global_id();
 
   equationSystems_.initialize();
 
@@ -922,9 +922,9 @@ Realm::setup_nodal_fields()
   if (!fieldManager_) {
     setup_field_manager();
   }
-#ifdef NALU_USES_HYPRE
-  hypreGlobalId_ = fieldManager_->register_field<HypreIDFieldType>(
-    "hypre_global_id", meta_data().get_parts());
+#ifdef NALU_USES_NALU_HYPRE
+  nalu_hypreGlobalId_ = fieldManager_->register_field<HypreIDFieldType>(
+    "nalu_hypre_global_id", meta_data().get_parts());
 #endif
 #ifdef NALU_USES_TRILINOS_SOLVERS
   // TODO work on removing this variable from realm by accessing fields through
@@ -3574,22 +3574,22 @@ Realm::set_global_id()
 }
 
 void
-Realm::set_hypre_global_id()
+Realm::set_nalu_hypre_global_id()
 {
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
   /* Create a mapping of Nalu Global ID (nodes) to Hypre Global ID.
    *
    * Background: Hypre requires a contiguous mapping of row IDs for its
    * IJMatrix and IJVector data structure, i.e., the startID(iproc+1) =
    * endID(iproc) + 1. Therefore, this method first determines the total
    * number of rows in each paritition and then determines the starting and
-   * ending IDs for the Hypre matrix and finally assigns the hypre ID for all
-   * the nodes on this partition in the hypreGlobalId_ field.
+   * ending IDs for the Hypre matrix and finally assigns the nalu_hypre ID for all
+   * the nodes on this partition in the nalu_hypreGlobalId_ field.
    */
 
   // Fill with an invalid value for future error checking
   stk::mesh::field_fill(
-    std::numeric_limits<HypreIntType>::max(), *hypreGlobalId_);
+    std::numeric_limits<HypreIntType>::max(), *nalu_hypreGlobalId_);
 
   const stk::mesh::Selector s_local =
     meta_data().locally_owned_part() & !get_inactive_selector();
@@ -3599,8 +3599,8 @@ Realm::set_hypre_global_id()
   int nprocs = bulkData_->parallel_size();
   int iproc = bulkData_->parallel_rank();
   std::vector<int> nodesPerProc(nprocs);
-  // std::vector<stk::mesh::EntityId> hypreOffsets(nprocs+1);
-  hypreOffsets_.resize(nprocs + 1);
+  // std::vector<stk::mesh::EntityId> nalu_hypreOffsets(nprocs+1);
+  nalu_hypreOffsets_.resize(nprocs + 1);
 
   // 1. Determine the number of nodes per partition and determine appropriate
   // offsets on each MPI rank.
@@ -3611,15 +3611,15 @@ Realm::set_hypre_global_id()
     &num_nodes, 1, MPI_INT, nodesPerProc.data(), 1, MPI_INT,
     bulkData_->parallel());
 
-  hypreOffsets_[0] = 0;
+  nalu_hypreOffsets_[0] = 0;
   for (int i = 1; i <= nprocs; i++)
-    hypreOffsets_[i] = hypreOffsets_[i - 1] + nodesPerProc[i - 1];
+    nalu_hypreOffsets_[i] = nalu_hypreOffsets_[i - 1] + nodesPerProc[i - 1];
 
   // These are set up for NDOF=1, the actual lower/upper extents will be
   // finalized in HypreLinearSystem class based on the equation being solved.
-  hypreILower_ = hypreOffsets_[iproc];
-  hypreIUpper_ = hypreOffsets_[iproc + 1];
-  hypreNumNodes_ = hypreOffsets_[nprocs];
+  nalu_hypreILower_ = nalu_hypreOffsets_[iproc];
+  nalu_hypreIUpper_ = nalu_hypreOffsets_[iproc + 1];
+  nalu_hypreNumNodes_ = nalu_hypreOffsets_[nprocs];
 
   // 2. Sort the local STK IDs so that we retain a 1-1 mapping as much as
   // possible
@@ -3636,15 +3636,15 @@ Realm::set_hypre_global_id()
 
   // 3. Store Hypre global IDs for all the nodes so that this can be used to
   // lookup and populate Hypre data structures.
-  HypreIntType nidx = static_cast<HypreIntType>(hypreILower_);
+  HypreIntType nidx = static_cast<HypreIntType>(nalu_hypreILower_);
   for (auto nid : localIDs) {
     auto node = bulkData_->get_entity(stk::topology::NODE_RANK, nid);
-    HypreIntType* hids = stk::mesh::field_data(*hypreGlobalId_, node);
+    HypreIntType* hids = stk::mesh::field_data(*nalu_hypreGlobalId_, node);
     *hids = nidx++;
   }
 
   auto& bulk = bulk_data();
-  std::vector<const stk::mesh::FieldBase*> fVec{hypreGlobalId_};
+  std::vector<const stk::mesh::FieldBase*> fVec{nalu_hypreGlobalId_};
 
   stk::mesh::copy_owned_to_shared(bulk, fVec);
   stk::mesh::communicate_field_data(bulk.aura_ghosting(), fVec);
@@ -3662,8 +3662,8 @@ Realm::set_hypre_global_id()
   if (
     periodicManager_ != nullptr &&
     periodicManager_->periodicGhosting_ != nullptr) {
-    periodicManager_->parallel_communicate_field(hypreGlobalId_);
-    periodicManager_->periodic_parallel_communicate_field(hypreGlobalId_);
+    periodicManager_->parallel_communicate_field(nalu_hypreGlobalId_);
+    periodicManager_->periodic_parallel_communicate_field(nalu_hypreGlobalId_);
   }
 #endif
 }

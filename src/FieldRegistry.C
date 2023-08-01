@@ -64,7 +64,7 @@ Registry()
     {"elemVectorField",           SingleStateElemGeneric}, // Used in testing
     {"exposed_area_vector",       SingleStateEdgeGeneric},
     {"Gju",                       SingleStateNodeGeneric},
-    {"hypre_global_id",           HypreId},
+    {"nalu_hypre_global_id",           HypreId},
     {"iblank",                    NodalScalarInt},
     {"idField",                   SingleStateNodalScalar},                         
     {"mass_flow_rate_scs",        SingleStateElemGeneric},

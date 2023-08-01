@@ -60,7 +60,7 @@
 #include <FixPressureAtNodeAlgorithm.h>
 #include <FixPressureAtNodeInfo.h>
 
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
 #include <HypreLinearSystem.h>
 #endif
 
@@ -2154,7 +2154,7 @@ MomentumEquationSystem::register_symmetry_bc(
     break;
   }
 
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
   if (dynamic_cast<HypreLinearSystem*>(linsys_) != nullptr) {
     throw std::runtime_error("Hypre is not supported for a momentum solver "
                              "when using strong_symmetry bc's.");

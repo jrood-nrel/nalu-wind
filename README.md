@@ -57,7 +57,7 @@ repository and automatically deployed to ReadTheDocs website upon new commits.
 Nalu-Wind is primarily built upon the packages provided by the [Trilinos
 project](https://trilinos.org), which in turn depends on several third-party
 libraries (MPI, HDF5, NetCDF, parallel NetCDF), and YAML-CPP. In addition, it
-has the following optional dependencies: hypre, TIOGA, and OpenFAST. Detailed
+has the following optional dependencies: nalu_hypre, TIOGA, and OpenFAST. Detailed
 build instructions are available in the [user
 manual](https://nalu-wind.readthedocs.io/en/latest/source/user/building.html).
 We recommend using [Spack](https://spack.io/) package manager to install

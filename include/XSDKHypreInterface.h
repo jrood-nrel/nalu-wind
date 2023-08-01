@@ -47,21 +47,21 @@
 // retained.
 //
 
-#ifndef XSDKHYPREINTERFACE_H
-#define XSDKHYPREINTERFACE_H
+#ifndef XSDKNALU_HYPREINTERFACE_H
+#define XSDKNALU_HYPREINTERFACE_H
 
 #include "FieldTypeDef.h"
 #ifdef NALU_USES_TRILINOS_SOLVERS
 #include "Ifpack2_ConfigDefs.hpp"
 #endif
 
-#include "HYPRE_IJ_mv.h"
-#include "HYPRE_parcsr_ls.h"
+#include "NALU_HYPRE_IJ_mv.h"
+#include "NALU_HYPRE_parcsr_ls.h"
 #include "krylov.h"
-#include "_hypre_parcsr_mv.h"
-#include "_hypre_IJ_mv.h"
-#include "HYPRE_parcsr_mv.h"
-#include "HYPRE.h"
+#include "_nalu_hypre_parcsr_mv.h"
+#include "_nalu_hypre_IJ_mv.h"
+#include "NALU_HYPRE_parcsr_mv.h"
+#include "NALU_HYPRE.h"
 
 #ifdef NALU_USES_TRILINOS_SOLVERS
 #include "Ifpack2_Preconditioner.hpp"
@@ -74,8 +74,8 @@
 
 namespace Ifpack2 {
 
-#ifndef HYPRE_ENUMS
-#define HYPRE_ENUMS
+#ifndef NALU_HYPRE_ENUMS
+#define NALU_HYPRE_ENUMS
 namespace Hypre {
 //! This enumerated type defines the allowed solvers and preconditioners in
 //! Hypre. Some can be used as both solver and preconditioner.
@@ -97,7 +97,7 @@ enum Hypre_Solver {
 //! solve or apply the preconditioner.
 enum Hypre_Chooser { Solver, Prec };
 } // namespace Hypre
-#endif // HYPRE_ENUMS
+#endif // NALU_HYPRE_ENUMS
 
 //! This class is used to help with passing parameters in the SetParameter()
 //! function. Use this class to call Hypre's internal parameters.
@@ -109,7 +109,7 @@ public:
   //! Single int constructor.
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, HypreIntType),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, HypreIntType),
     HypreIntType param1)
     : chooser_(chooser), option_(0), int_func_(funct_name), int_param1_(param1)
   {
@@ -118,7 +118,7 @@ public:
   //! Single double constructor.
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, double),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, double),
     double param1)
     : chooser_(chooser),
       option_(1),
@@ -130,7 +130,7 @@ public:
   //! Single double, single HypreIntType constructor.
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, double, HypreIntType),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, double, HypreIntType),
     double param1,
     HypreIntType param2)
     : chooser_(chooser),
@@ -144,7 +144,7 @@ public:
   //! Two HypreIntTypes constructor.
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, HypreIntType, HypreIntType),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, HypreIntType, HypreIntType),
     HypreIntType param1,
     HypreIntType param2)
     : chooser_(chooser),
@@ -158,7 +158,7 @@ public:
   //! HypreIntType pointer constructor.
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, HypreIntType*),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, HypreIntType*),
     HypreIntType* param1)
     : chooser_(chooser),
       option_(4),
@@ -170,7 +170,7 @@ public:
   //! Double pointer constructor.
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, double*),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, double*),
     double* param1)
     : chooser_(chooser),
       option_(5),
@@ -182,7 +182,7 @@ public:
   //! char pointer constructor
   FunctionParameter(
     Hypre::Hypre_Chooser chooser,
-    HypreIntType (*funct_name)(HYPRE_Solver, char*),
+    HypreIntType (*funct_name)(NALU_HYPRE_Solver, char*),
     char* param1)
     : chooser_(chooser),
       option_(6),
@@ -192,8 +192,8 @@ public:
   }
 
   //! Only method of this class. Calls the function pointer with the passed in
-  //! HYPRE_Solver
-  int CallFunction(HYPRE_Solver solver, HYPRE_Solver precond)
+  //! NALU_HYPRE_Solver
+  int CallFunction(NALU_HYPRE_Solver solver, NALU_HYPRE_Solver precond)
   {
     if (chooser_ == Hypre::Solver) {
       if (option_ == 0) {
@@ -235,13 +235,13 @@ public:
 private:
   Hypre::Hypre_Chooser chooser_;
   int option_;
-  HypreIntType (*int_func_)(HYPRE_Solver, HypreIntType);
-  HypreIntType (*double_func_)(HYPRE_Solver, double);
-  HypreIntType (*double_int_func_)(HYPRE_Solver, double, HypreIntType);
-  HypreIntType (*int_int_func_)(HYPRE_Solver, HypreIntType, HypreIntType);
-  HypreIntType (*int_star_func_)(HYPRE_Solver, HypreIntType*);
-  HypreIntType (*double_star_func_)(HYPRE_Solver, double*);
-  HypreIntType (*char_star_func_)(HYPRE_Solver, char*);
+  HypreIntType (*int_func_)(NALU_HYPRE_Solver, HypreIntType);
+  HypreIntType (*double_func_)(NALU_HYPRE_Solver, double);
+  HypreIntType (*double_int_func_)(NALU_HYPRE_Solver, double, HypreIntType);
+  HypreIntType (*int_int_func_)(NALU_HYPRE_Solver, HypreIntType, HypreIntType);
+  HypreIntType (*int_star_func_)(NALU_HYPRE_Solver, HypreIntType*);
+  HypreIntType (*double_star_func_)(NALU_HYPRE_Solver, double*);
+  HypreIntType (*char_star_func_)(NALU_HYPRE_Solver, char*);
   HypreIntType int_param1_;
   HypreIntType int_param2_;
   double double_param1_;
@@ -252,4 +252,4 @@ private:
 
 } // namespace Ifpack2
 
-#endif /* XSDKHYPREINTERFACE_H */
+#endif /* XSDKNALU_HYPREINTERFACE_H */

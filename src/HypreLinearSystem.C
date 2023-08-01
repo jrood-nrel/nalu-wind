@@ -31,7 +31,7 @@ HypreLinearSystem::HypreLinearSystem(
   localMatSharedRowCounts_.clear();
   globalRhsSharedRowCounts_.clear();
   localRhsSharedRowCounts_.clear();
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   sprintf(oname_, "debug_out_%d.txt", rank_);
   output_ = fopen(oname_, "wt");
   fprintf(
@@ -43,14 +43,14 @@ HypreLinearSystem::HypreLinearSystem(
 
 HypreLinearSystem::~HypreLinearSystem()
 {
-  if (hypreMatrixVectorsCreated_) {
-    HYPRE_IJMatrixDestroy(mat_);
-    HYPRE_IJVectorDestroy(rhs_);
-    HYPRE_IJVectorDestroy(sln_);
-    hypreMatrixVectorsCreated_ = false;
+  if (nalu_hypreMatrixVectorsCreated_) {
+    NALU_HYPRE_IJMatrixDestroy(mat_);
+    NALU_HYPRE_IJVectorDestroy(rhs_);
+    NALU_HYPRE_IJVectorDestroy(sln_);
+    nalu_hypreMatrixVectorsCreated_ = false;
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   if (buildBeginLinSysConstTimer_.size() > 0)
     printTimings(buildBeginLinSysConstTimer_, "\nbuildBeginLinSysConst");
   if (buildNodeGraphTimer_.size() > 0)
@@ -71,10 +71,10 @@ HypreLinearSystem::~HypreLinearSystem()
     printTimings(buildGraphTimer_, "buildGraphTimer");
   if (finalizeLinearSystemTimer_.size() > 0)
     printTimings(finalizeLinearSystemTimer_, "finalizeLinearSystemTimer");
-  if (hypreMatAssemblyTimer_.size() > 0)
-    printTimings(hypreMatAssemblyTimer_, "hypreMatAssemblyTimer");
-  if (hypreRhsAssemblyTimer_.size() > 0)
-    printTimings(hypreRhsAssemblyTimer_, "hypreRhsAssemblyTimer");
+  if (nalu_hypreMatAssemblyTimer_.size() > 0)
+    printTimings(nalu_hypreMatAssemblyTimer_, "nalu_hypreMatAssemblyTimer");
+  if (nalu_hypreRhsAssemblyTimer_.size() > 0)
+    printTimings(nalu_hypreRhsAssemblyTimer_, "nalu_hypreRhsAssemblyTimer");
 #endif
 }
 
@@ -100,7 +100,7 @@ HypreLinearSystem::beginLinearSystemConstruction()
     return;
   inConstruction_ = true;
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   buildBeginLinSysConstTimer_.resize(0);
   buildNodeGraphTimer_.resize(0);
   buildFaceToNodeGraphTimer_.resize(0);
@@ -111,37 +111,37 @@ HypreLinearSystem::beginLinearSystemConstruction()
   buildDirichletNodeGraphTimer_.resize(0);
   buildGraphTimer_.resize(0);
   finalizeLinearSystemTimer_.resize(0);
-  hypreMatAssemblyTimer_.resize(0);
-  hypreRhsAssemblyTimer_.resize(0);
+  nalu_hypreMatAssemblyTimer_.resize(0);
+  nalu_hypreRhsAssemblyTimer_.resize(0);
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
 
-#ifndef HYPRE_BIGINT
-  // Make sure that HYPRE is compiled with 64-bit integer support when running
+#ifndef NALU_HYPRE_BIGINT
+  // Make sure that NALU_HYPRE is compiled with 64-bit integer support when running
   // O(~1B) linear systems.
   uint64_t totalRows =
-    (static_cast<uint64_t>(realm_.hypreNumNodes_) *
+    (static_cast<uint64_t>(realm_.nalu_hypreNumNodes_) *
      static_cast<uint64_t>(numDof_));
   uint64_t maxHypreSize =
     static_cast<uint64_t>(std::numeric_limits<HypreIntType>::max());
 
   if (totalRows > maxHypreSize)
     throw std::runtime_error(
-      "The linear system size is greater than what HYPRE is compiled for. "
+      "The linear system size is greater than what NALU_HYPRE is compiled for. "
       "Please recompile with bigint support and link to Nalu");
 #endif
 
   if (rank_ == 0) {
-    iLower_ = realm_.hypreILower_;
+    iLower_ = realm_.nalu_hypreILower_;
   } else {
-    iLower_ = realm_.hypreILower_ * numDof_;
+    iLower_ = realm_.nalu_hypreILower_ * numDof_;
   }
 
-  iUpper_ = realm_.hypreIUpper_ * numDof_ - 1;
+  iUpper_ = realm_.nalu_hypreIUpper_ * numDof_ - 1;
   // For now set column indices the same as row indices
   jLower_ = iLower_;
   jUpper_ = iUpper_;
@@ -149,13 +149,13 @@ HypreLinearSystem::beginLinearSystemConstruction()
   // The total number of rows handled by this MPI rank for Hypre
   numRows_ = (iUpper_ - iLower_ + 1);
   // Total number of global rows in the system
-  maxRowID_ = realm_.hypreNumNodes_ * numDof_ - 1;
+  maxRowID_ = realm_.nalu_hypreNumNodes_ * numDof_ - 1;
   globalNumRows_ = maxRowID_ + 1;
 
 #if 0
   if (numDof_ > 0)
     std::cerr << rank_ << "\t" << numDof_ << "\t"
-              << realm_.hypreILower_ << "\t" << realm_.hypreIUpper_ << "\t"
+              << realm_.nalu_hypreILower_ << "\t" << realm_.nalu_hypreIUpper_ << "\t"
                 << iLower_ << "\t" << iUpper_ << "\t"
                 << numRows_ << "\t" << maxRowID_ << std::endl;
 #endif
@@ -185,7 +185,7 @@ HypreLinearSystem::beginLinearSystemConstruction()
   skippedRows_.clear();
   oversetRows_.clear();
 
-  std::vector<const stk::mesh::FieldBase*> fVec{realm_.hypreGlobalId_};
+  std::vector<const stk::mesh::FieldBase*> fVec{realm_.nalu_hypreGlobalId_};
 
   if (
     realm_.oversetManager_ != nullptr &&
@@ -199,7 +199,7 @@ HypreLinearSystem::beginLinearSystemConstruction()
     stk::mesh::communicate_field_data(
       *realm_.nonConformalManager_->nonConformalGhosting_, fVec);
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -276,7 +276,7 @@ HypreLinearSystem::fill_hids_columns(
   std::vector<HypreIntType>& columns)
 {
   for (unsigned i = 0; i < numNodes; ++i) {
-    hids[i] = get_entity_hypre_id(nodes[i]);
+    hids[i] = get_entity_nalu_hypre_id(nodes[i]);
     for (unsigned d = 0; d < numDof_; ++d)
       columns[i * numDof_ + d] = hids[i] * numDof_ + d;
   }
@@ -285,7 +285,7 @@ HypreLinearSystem::fill_hids_columns(
 void
 HypreLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -306,7 +306,7 @@ HypreLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
       const stk::mesh::Bucket& b = *buckets[ib];
       for (stk::mesh::Bucket::size_type k = 0; k < b.size(); ++k) {
         stk::mesh::Entity node = b[k];
-        hids[0] = get_entity_hypre_id(node);
+        hids[0] = get_entity_nalu_hypre_id(node);
 
         /* fill owned/shared 1 Dof */
         fill_owned_shared_data_structures_1DoF(1, hids);
@@ -320,7 +320,7 @@ HypreLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
       const stk::mesh::Bucket& b = *buckets[ib];
       for (stk::mesh::Bucket::size_type k = 0; k < b.size(); ++k) {
         stk::mesh::Entity node = b[k];
-        hids[0] = get_entity_hypre_id(node);
+        hids[0] = get_entity_nalu_hypre_id(node);
         for (unsigned d = 0; d < numDof_; ++d)
           columns[d] = hids[0] * numDof_ + d;
 
@@ -330,7 +330,7 @@ HypreLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -341,7 +341,7 @@ HypreLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -368,9 +368,9 @@ HypreLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
 
         stk::mesh::Entity const* nodes = b.begin_nodes(k);
 
-        /* save the hypre ids */
+        /* save the nalu_hypre ids */
         for (unsigned i = 0; i < numNodes; ++i)
-          hids[i] = get_entity_hypre_id(nodes[i]);
+          hids[i] = get_entity_nalu_hypre_id(nodes[i]);
 
         /* fill owned/shared 1 Dof */
         fill_owned_shared_data_structures_1DoF(numNodes, hids);
@@ -400,7 +400,7 @@ HypreLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -411,7 +411,7 @@ HypreLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -437,9 +437,9 @@ HypreLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
 
         stk::mesh::Entity const* nodes = b.begin_nodes(k);
 
-        /* save the hypre ids */
+        /* save the nalu_hypre ids */
         for (unsigned i = 0; i < numNodes; ++i)
-          hids[i] = get_entity_hypre_id(nodes[i]);
+          hids[i] = get_entity_nalu_hypre_id(nodes[i]);
 
         /* fill owned/shared 1 Dof */
         fill_owned_shared_data_structures_1DoF(numNodes, hids);
@@ -469,7 +469,7 @@ HypreLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -480,7 +480,7 @@ HypreLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreLinearSystem::buildElemToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -506,9 +506,9 @@ HypreLinearSystem::buildElemToNodeGraph(const stk::mesh::PartVector& parts)
 
         stk::mesh::Entity const* nodes = b.begin_nodes(k);
 
-        /* save the hypre ids */
+        /* save the nalu_hypre ids */
         for (unsigned i = 0; i < numNodes; ++i)
-          hids[i] = get_entity_hypre_id(nodes[i]);
+          hids[i] = get_entity_nalu_hypre_id(nodes[i]);
 
         /* fill owned/shared 1 Dof */
         fill_owned_shared_data_structures_1DoF(numNodes, hids);
@@ -538,7 +538,7 @@ HypreLinearSystem::buildElemToNodeGraph(const stk::mesh::PartVector& parts)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -549,7 +549,7 @@ HypreLinearSystem::buildElemToNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreLinearSystem::buildFaceElemToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -584,10 +584,10 @@ HypreLinearSystem::buildFaceElemToNodeGraph(const stk::mesh::PartVector& parts)
         const unsigned numNodes = (unsigned)bulkData.num_nodes(element);
 
         if (numNodes) {
-          /* save the hypre ids */
+          /* save the nalu_hypre ids */
           std::vector<HypreIntType> hids(numNodes);
           for (unsigned i = 0; i < numNodes; ++i)
-            hids[i] = get_entity_hypre_id(elem_nodes[i]);
+            hids[i] = get_entity_nalu_hypre_id(elem_nodes[i]);
 
           /* fill owned/shared 1 Dof */
           fill_owned_shared_data_structures_1DoF(numNodes, hids);
@@ -626,7 +626,7 @@ HypreLinearSystem::buildFaceElemToNodeGraph(const stk::mesh::PartVector& parts)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -649,7 +649,7 @@ HypreLinearSystem::buildNonConformalNodeGraph(const stk::mesh::PartVector&)
 void
 HypreLinearSystem::buildOversetNodeGraph(const stk::mesh::PartVector&)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -687,13 +687,13 @@ HypreLinearSystem::buildOversetNodeGraph(const stk::mesh::PartVector&)
     hids.resize(numEntities);
 
     entities[0] = orphanNode;
-    hids[0] = get_entity_hypre_id(entities[0]);
+    hids[0] = get_entity_nalu_hypre_id(entities[0]);
     for (size_t n = 0; n < numNodes; ++n) {
       entities[n + 1] = elem_nodes[n];
-      hids[n + 1] = get_entity_hypre_id(entities[n + 1]);
+      hids[n + 1] = get_entity_nalu_hypre_id(entities[n + 1]);
     }
 
-    /* save the hypre ids */
+    /* save the nalu_hypre ids */
     for (unsigned d = 0; d < numDof_; ++d) {
       HypreIntType hid = hids[0] * numDof_ + d;
       skippedRows_.insert(hid);
@@ -708,7 +708,7 @@ HypreLinearSystem::buildOversetNodeGraph(const stk::mesh::PartVector&)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -719,7 +719,7 @@ HypreLinearSystem::buildOversetNodeGraph(const stk::mesh::PartVector&)
 void
 HypreLinearSystem::buildDirichletNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -733,7 +733,7 @@ HypreLinearSystem::buildDirichletNodeGraph(const stk::mesh::PartVector& parts)
   for (auto b : bkts) {
     for (size_t in = 0; in < b->size(); in++) {
       auto node = (*b)[in];
-      HypreIntType hid = *stk::mesh::field_data(*realm_.hypreGlobalId_, node);
+      HypreIntType hid = *stk::mesh::field_data(*realm_.nalu_hypreGlobalId_, node);
       for (unsigned d = 0; d < numDof_; ++d) {
         HypreIntType lid = hid * numDof_ + d;
         skippedRows_.insert(lid);
@@ -745,7 +745,7 @@ HypreLinearSystem::buildDirichletNodeGraph(const stk::mesh::PartVector& parts)
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -757,7 +757,7 @@ void
 HypreLinearSystem::buildDirichletNodeGraph(
   const std::vector<stk::mesh::Entity>& nodeList)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -765,7 +765,7 @@ HypreLinearSystem::buildDirichletNodeGraph(
   beginLinearSystemConstruction();
 
   for (const auto& node : nodeList) {
-    HypreIntType hid = get_entity_hypre_id(node);
+    HypreIntType hid = get_entity_nalu_hypre_id(node);
     for (unsigned d = 0; d < numDof_; ++d) {
       HypreIntType lid = hid * numDof_ + d;
       skippedRows_.insert(lid);
@@ -776,7 +776,7 @@ HypreLinearSystem::buildDirichletNodeGraph(
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -788,7 +788,7 @@ void
 HypreLinearSystem::buildDirichletNodeGraph(
   const stk::mesh::NgpMesh::ConnectedNodes nodeList)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -796,7 +796,7 @@ HypreLinearSystem::buildDirichletNodeGraph(
   beginLinearSystemConstruction();
 
   for (unsigned i = 0; i < nodeList.size(); ++i) {
-    HypreIntType hid = get_entity_hypre_id(nodeList[i]);
+    HypreIntType hid = get_entity_nalu_hypre_id(nodeList[i]);
     for (unsigned d = 0; d < numDof_; ++d) {
       HypreIntType lid = hid * numDof_ + d;
       skippedRows_.insert(lid);
@@ -807,7 +807,7 @@ HypreLinearSystem::buildDirichletNodeGraph(
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -818,7 +818,7 @@ HypreLinearSystem::buildDirichletNodeGraph(
 void
 HypreLinearSystem::finalizeLinearSystem()
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -826,7 +826,7 @@ HypreLinearSystem::finalizeLinearSystem()
   ThrowRequire(inConstruction_);
   inConstruction_ = false;
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   size_t used1 = 0, free1 = 0;
   stk::get_gpu_memory_info(used1, free1);
 #endif
@@ -845,7 +845,7 @@ HypreLinearSystem::finalizeLinearSystem()
   hcApplier->ngpMesh_ = realm_.ngp_mesh();
   hcApplier->ngpHypreGlobalId_ =
     realm_.ngp_field_manager().get_field<HypreIntType>(
-      realm_.hypreGlobalId_->mesh_meta_data_ordinal());
+      realm_.nalu_hypreGlobalId_->mesh_meta_data_ordinal());
 
   /* create these mappings */
   buildCoeffApplierPeriodicNodeToHIDMapping();
@@ -857,7 +857,7 @@ HypreLinearSystem::finalizeLinearSystem()
    * all ranks */
   computeRowSizes();
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   size_t used2 = 0, free2 = 0;
   stk::get_gpu_memory_info(used2, free2);
   size_t total = used2 + free2;
@@ -871,7 +871,7 @@ HypreLinearSystem::finalizeLinearSystem()
   fclose(output_);
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -904,8 +904,8 @@ HypreLinearSystem::computeRowSizes()
     HypreIntType shared_row = row_indices_shared_host_(i);
     HypreIntType shared_count = row_counts_shared_host_(i);
     for (int j = 0; j < nprocs; ++j) {
-      HypreIntType lower = (HypreIntType)realm_.hypreOffsets_[j] * numDof_;
-      HypreIntType upper = (HypreIntType)realm_.hypreOffsets_[j + 1] * numDof_;
+      HypreIntType lower = (HypreIntType)realm_.nalu_hypreOffsets_[j] * numDof_;
+      HypreIntType upper = (HypreIntType)realm_.nalu_hypreOffsets_[j + 1] * numDof_;
       if (shared_row >= lower && shared_row < upper) {
         localMatSharedRowCounts_[j] += shared_count;
         localRhsSharedRowCounts_[j] += 1;
@@ -916,10 +916,10 @@ HypreLinearSystem::computeRowSizes()
   /* reduce the shared NNZ per row across all ranks */
   MPI_Allreduce(
     localMatSharedRowCounts_.data(), globalMatSharedRowCounts_.data(), nprocs,
-    HYPRE_MPI_INT, MPI_SUM, comm);
+    NALU_HYPRE_MPI_INT, MPI_SUM, comm);
   MPI_Allreduce(
     localRhsSharedRowCounts_.data(), globalRhsSharedRowCounts_.data(), nprocs,
-    HYPRE_MPI_INT, MPI_SUM, comm);
+    NALU_HYPRE_MPI_INT, MPI_SUM, comm);
 
   /* compute the receive NNZ per row from all other ranks */
   offProcNNZToRecv_ = globalMatSharedRowCounts_[iproc];
@@ -933,7 +933,7 @@ HypreLinearSystem::computeRowSizes()
   HypreLinearSolverConfig* config =
     reinterpret_cast<HypreLinearSolverConfig*>(solver->getConfig());
 
-  /* set the key hypre parameters */
+  /* set the key nalu_hypre parameters */
   offProcNNZToSend_ = hcApplier->num_nonzeros_shared_;
   offProcRhsToSend_ = hcApplier->num_rows_shared_;
 
@@ -1244,7 +1244,7 @@ HypreLinearSystem::buildCoeffApplierDeviceDataStructures()
   HypreLinSysCoeffApplier* hcApplier =
     dynamic_cast<HypreLinSysCoeffApplier*>(hostCoeffApplier.get());
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -1275,7 +1275,7 @@ HypreLinearSystem::buildCoeffApplierDeviceDataStructures()
   hcApplier->checkSkippedRows_ = HypreIntTypeViewScalar("checkSkippedRows_");
   Kokkos::deep_copy(hcApplier->checkSkippedRows_, 1);
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   auto num_rows = hcApplier->num_rows_owned_ + hcApplier->num_rows_shared_;
   auto num_nonzeros =
     hcApplier->num_nonzeros_owned_ + hcApplier->num_nonzeros_shared_;
@@ -1296,7 +1296,7 @@ HypreLinearSystem::buildCoeffApplierDeviceDataStructures()
     hcApplier->oversetRowsMap_.size() * 2 * sizeof(HypreIntType);
   totalMemDevice +=
     hcApplier->map_shared_.size() * (sizeof(HypreIntType) + sizeof(unsigned));
-  totalMemDevice += hcApplier->periodic_node_to_hypre_id_.size() *
+  totalMemDevice += hcApplier->periodic_node_to_nalu_hypre_id_.size() *
                     (sizeof(HypreIntType) + sizeof(unsigned));
   totalMemDevice +=
     hcApplier->d_overset_row_indices_.extent(0) * sizeof(HypreIntType);
@@ -1326,7 +1326,7 @@ HypreLinearSystem::buildCoeffApplierDeviceDataStructures()
   rowCountShared_.clear();
   columnsShared_.clear();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -1344,7 +1344,7 @@ HypreLinearSystem::buildCoeffApplierPeriodicNodeToHIDMapping()
                                  !(realm_.get_inactive_selector());
 
   std::vector<HypreIntType> periodic_node(0);
-  std::vector<HypreIntType> periodic_node_hypre_id(0);
+  std::vector<HypreIntType> periodic_node_nalu_hypre_id(0);
 
   const stk::mesh::BucketVector& nodeBuckets =
     realm_.get_buckets(stk::topology::NODE_RANK, selector);
@@ -1359,10 +1359,10 @@ HypreLinearSystem::buildCoeffApplierPeriodicNodeToHIDMapping()
       if (!bulk.is_valid(mnode)) {
         continue;
       }
-      HypreIntType hid = *stk::mesh::field_data(*realm_.hypreGlobalId_, mnode);
+      HypreIntType hid = *stk::mesh::field_data(*realm_.nalu_hypreGlobalId_, mnode);
       if (naluId != bulk.identifier(node)) {
         periodic_node.push_back(node.local_offset());
-        periodic_node_hypre_id.push_back(hid);
+        periodic_node_nalu_hypre_id.push_back(hid);
       }
     }
   }
@@ -1371,15 +1371,15 @@ HypreLinearSystem::buildCoeffApplierPeriodicNodeToHIDMapping()
   HypreLinSysCoeffApplier* hcApplier =
     dynamic_cast<HypreLinSysCoeffApplier*>(hostCoeffApplier.get());
 
-  hcApplier->periodic_node_to_hypre_id_ = PeriodicNodeMap(periodic_node.size());
-  PeriodicNodeMapHost periodic_node_to_hypre_id_host =
+  hcApplier->periodic_node_to_nalu_hypre_id_ = PeriodicNodeMap(periodic_node.size());
+  PeriodicNodeMapHost periodic_node_to_nalu_hypre_id_host =
     PeriodicNodeMapHost(periodic_node.size());
   for (unsigned i = 0; i < periodic_node.size(); ++i) {
-    periodic_node_to_hypre_id_host.insert(
-      periodic_node[i], periodic_node_hypre_id[i]);
+    periodic_node_to_nalu_hypre_id_host.insert(
+      periodic_node[i], periodic_node_nalu_hypre_id[i]);
   }
   Kokkos::deep_copy(
-    hcApplier->periodic_node_to_hypre_id_, periodic_node_to_hypre_id_host);
+    hcApplier->periodic_node_to_nalu_hypre_id_, periodic_node_to_nalu_hypre_id_host);
 }
 
 void
@@ -1493,7 +1493,7 @@ HypreLinearSystem::finishCoupledOversetAssembly()
 }
 
 void
-HypreLinearSystem::hypreIJMatrixSetAddToValues()
+HypreLinearSystem::nalu_hypreIJMatrixSetAddToValues()
 {
   HypreLinSysCoeffApplier* hcApplier =
     dynamic_cast<HypreLinSysCoeffApplier*>(hostCoeffApplier.get());
@@ -1507,10 +1507,10 @@ HypreLinearSystem::hypreIJMatrixSetAddToValues()
     reinterpret_cast<HypreLinearSolverConfig*>(solver->getConfig());
   if (config->simpleHypreMatrixAssemble()) {
 #if 0
-    /* set the key hypre parameters */
-    HYPRE_IJMatrixSetMaxOnProcElmts(mat_, hcApplier->num_nonzeros_owned_);
-    HYPRE_IJMatrixSetOffProcSendElmts(mat_, offProcNNZToSend_);
-    HYPRE_IJMatrixSetOffProcRecvElmts(mat_, offProcNNZToRecv_);
+    /* set the key nalu_hypre parameters */
+    NALU_HYPRE_IJMatrixSetMaxOnProcElmts(mat_, hcApplier->num_nonzeros_owned_);
+    NALU_HYPRE_IJMatrixSetOffProcSendElmts(mat_, offProcNNZToSend_);
+    NALU_HYPRE_IJMatrixSetOffProcRecvElmts(mat_, offProcNNZToRecv_);
 #endif
   }
 
@@ -1569,10 +1569,10 @@ HypreLinearSystem::hypreIJMatrixSetAddToValues()
 
   if (num_nonzeros_owned) {
     /* Set the owned part */
-    HYPRE_IJMatrixSetValues2(
+    NALU_HYPRE_IJMatrixSetValues2(
       mat_, num_nonzeros_owned, NULL, rows_dev_.data(), NULL,
       hcApplier->cols_dev_.data(), hcApplier->values_dev_.data());
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
     scanBufferForBadValues(
       hcApplier->values_dev_.data(), num_nonzeros_owned, __FILE__, __FUNCTION__,
       __LINE__, "Owned Matrix");
@@ -1584,11 +1584,11 @@ HypreLinearSystem::hypreIJMatrixSetAddToValues()
 
   if (num_nonzeros_shared) {
     /* Add the shared part */
-    HYPRE_IJMatrixAddToValues2(
+    NALU_HYPRE_IJMatrixAddToValues2(
       mat_, num_nonzeros_shared, NULL, rows_dev_.data() + num_nonzeros_owned,
       NULL, hcApplier->cols_dev_.data() + num_nonzeros_owned,
       hcApplier->values_dev_.data() + num_nonzeros_owned);
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
     scanBufferForBadValues(
       hcApplier->values_dev_.data() + num_nonzeros_owned, num_nonzeros_shared,
       __FILE__, __FUNCTION__, __LINE__, "Shared Matrix");
@@ -1601,7 +1601,7 @@ HypreLinearSystem::hypreIJMatrixSetAddToValues()
 }
 
 void
-HypreLinearSystem::hypreIJVectorSetAddToValues()
+HypreLinearSystem::nalu_hypreIJVectorSetAddToValues()
 {
   HypreLinSysCoeffApplier* hcApplier =
     dynamic_cast<HypreLinSysCoeffApplier*>(hostCoeffApplier.get());
@@ -1615,10 +1615,10 @@ HypreLinearSystem::hypreIJVectorSetAddToValues()
     reinterpret_cast<HypreLinearSolverConfig*>(solver->getConfig());
   if (config->simpleHypreMatrixAssemble()) {
 #if 0
-    /* set the key hypre parameters */
-    HYPRE_IJVectorSetMaxOnProcElmts(rhs_, num_rows_owned);
-    HYPRE_IJVectorSetOffProcSendElmts(rhs_, offProcRhsToSend_);
-    HYPRE_IJVectorSetOffProcRecvElmts(rhs_, offProcRhsToRecv_);
+    /* set the key nalu_hypre parameters */
+    NALU_HYPRE_IJVectorSetMaxOnProcElmts(rhs_, num_rows_owned);
+    NALU_HYPRE_IJVectorSetOffProcSendElmts(rhs_, offProcRhsToSend_);
+    NALU_HYPRE_IJVectorSetOffProcRecvElmts(rhs_, offProcRhsToRecv_);
 #endif
   }
 
@@ -1662,13 +1662,13 @@ HypreLinearSystem::hypreIJVectorSetAddToValues()
 
   if (num_rows_owned) {
     /* Set the owned part */
-    HYPRE_IJVectorSetValues(
+    NALU_HYPRE_IJVectorSetValues(
       rhs_, num_rows_owned, rhs_rows_dev_.data(), hcApplier->rhs_dev_.data());
   }
 
   if (num_rows_shared) {
     /* Add the shared part */
-    HYPRE_IJVectorAddToValues(
+    NALU_HYPRE_IJVectorAddToValues(
       rhs_, num_rows_shared, rhs_rows_dev_.data() + num_rows_owned,
       hcApplier->rhs_dev_.data() + num_rows_owned);
   }
@@ -1693,7 +1693,7 @@ HypreLinearSystem::dumpMatrixStats()
   std::fill(cols.begin(), cols.end(), 0);
 
   /* retrive nnz per row from Hypre */
-  HYPRE_IJMatrixGetRowCounts(mat_, numRows_, rows.data(), cols.data());
+  NALU_HYPRE_IJMatrixGetRowCounts(mat_, numRows_, rows.data(), cols.data());
 
   /* compute nnz for this rank */
   HypreIntType nnz = 0;
@@ -1707,7 +1707,7 @@ HypreLinearSystem::dumpMatrixStats()
   std::fill(globalNNZPerProc.begin(), globalNNZPerProc.end(), 0);
   tmp[iproc] = nnz;
   MPI_Reduce(
-    tmp.data(), globalNNZPerProc.data(), nprocs, HYPRE_MPI_INT, MPI_SUM, 0,
+    tmp.data(), globalNNZPerProc.data(), nprocs, NALU_HYPRE_MPI_INT, MPI_SUM, 0,
     realm_.bulk_data().parallel());
 
   /* NNZ owned ... before assembly */
@@ -1716,7 +1716,7 @@ HypreLinearSystem::dumpMatrixStats()
   std::vector<HypreIntType> nnz_owned(nprocs);
   std::fill(nnz_owned.begin(), nnz_owned.end(), 0);
   MPI_Reduce(
-    tmp.data(), nnz_owned.data(), nprocs, HYPRE_MPI_INT, MPI_SUM, 0,
+    tmp.data(), nnz_owned.data(), nprocs, NALU_HYPRE_MPI_INT, MPI_SUM, 0,
     realm_.bulk_data().parallel());
 
   /* NNZ send ... before assembly */
@@ -1725,7 +1725,7 @@ HypreLinearSystem::dumpMatrixStats()
   std::vector<HypreIntType> nnz_send(nprocs);
   std::fill(nnz_send.begin(), nnz_send.end(), 0);
   MPI_Reduce(
-    tmp.data(), nnz_send.data(), nprocs, HYPRE_MPI_INT, MPI_SUM, 0,
+    tmp.data(), nnz_send.data(), nprocs, NALU_HYPRE_MPI_INT, MPI_SUM, 0,
     realm_.bulk_data().parallel());
 
   /* NNZ recv ... before assembly */
@@ -1734,7 +1734,7 @@ HypreLinearSystem::dumpMatrixStats()
   std::vector<HypreIntType> nnz_recv(nprocs);
   std::fill(nnz_recv.begin(), nnz_recv.end(), 0);
   MPI_Reduce(
-    tmp.data(), nnz_recv.data(), nprocs, HYPRE_MPI_INT, MPI_SUM, 0,
+    tmp.data(), nnz_recv.data(), nprocs, NALU_HYPRE_MPI_INT, MPI_SUM, 0,
     realm_.bulk_data().parallel());
 
   /* num rows */
@@ -1743,7 +1743,7 @@ HypreLinearSystem::dumpMatrixStats()
   std::vector<HypreIntType> nrows(nprocs);
   std::fill(nrows.begin(), nrows.end(), 0);
   MPI_Reduce(
-    tmp.data(), nrows.data(), nprocs, HYPRE_MPI_INT, MPI_SUM, 0,
+    tmp.data(), nrows.data(), nprocs, NALU_HYPRE_MPI_INT, MPI_SUM, 0,
     realm_.bulk_data().parallel());
 
   /* Write to a file from rank 0 */
@@ -1766,8 +1766,8 @@ HypreLinearSystem::dumpMatrixStats()
            << ",nnz_send"
            << ",nnz_recv" << std::endl;
     for (int i = 0; i < nprocs; ++i) {
-      myfile << i << "," << realm_.hypreOffsets_[i] << ","
-             << realm_.hypreOffsets_[i + 1] << "," << nrows[i] << ","
+      myfile << i << "," << realm_.nalu_hypreOffsets_[i] << ","
+             << realm_.nalu_hypreOffsets_[i + 1] << "," << nrows[i] << ","
              << globalNNZPerProc[i] << "," << nnz_owned[i] << "," << nnz_send[i]
              << "," << nnz_recv[i] << std::endl;
     }
@@ -1778,28 +1778,28 @@ HypreLinearSystem::dumpMatrixStats()
 void
 HypreLinearSystem::loadCompleteSolver()
 {
-  // Now perform HYPRE assembly so that the data structures are ready to be used
+  // Now perform NALU_HYPRE assembly so that the data structures are ready to be used
   // by the solvers/preconditioners.
   HypreDirectSolver* solver =
     reinterpret_cast<HypreDirectSolver*>(linearSolver_);
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
 
-  HYPRE_IJMatrixAssemble(mat_);
-  HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
+  NALU_HYPRE_IJMatrixAssemble(mat_);
+  NALU_HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
-  hypre_CSRMatrix* diag =
-    hypre_ParCSRMatrixDiag((hypre_ParCSRMatrix*)hypre_IJMatrixObject(mat_));
-  hypre_CSRMatrix* offd =
-    hypre_ParCSRMatrixOffd((hypre_ParCSRMatrix*)hypre_IJMatrixObject(mat_));
-  HYPRE_Int nnz_diag = hypre_CSRMatrixNumNonzeros(diag);
-  HYPRE_Int nnz_offd = hypre_CSRMatrixNumNonzeros(offd);
-  double* ptr_diag = hypre_CSRMatrixData(diag);
-  double* ptr_offd = hypre_CSRMatrixData(offd);
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
+  nalu_hypre_CSRMatrix* diag =
+    nalu_hypre_ParCSRMatrixDiag((nalu_hypre_ParCSRMatrix*)nalu_hypre_IJMatrixObject(mat_));
+  nalu_hypre_CSRMatrix* offd =
+    nalu_hypre_ParCSRMatrixOffd((nalu_hypre_ParCSRMatrix*)nalu_hypre_IJMatrixObject(mat_));
+  NALU_HYPRE_Int nnz_diag = nalu_hypre_CSRMatrixNumNonzeros(diag);
+  NALU_HYPRE_Int nnz_offd = nalu_hypre_CSRMatrixNumNonzeros(offd);
+  double* ptr_diag = nalu_hypre_CSRMatrixData(diag);
+  double* ptr_offd = nalu_hypre_CSRMatrixData(offd);
   scanBufferForBadValues(
     ptr_diag, nnz_diag, __FILE__, __FUNCTION__, __LINE__, "Diag Matrix");
   scanBufferForBadValues(
@@ -1808,30 +1808,30 @@ HypreLinearSystem::loadCompleteSolver()
   fprintf(
     output_,
     "rank=%d : diag num_rows=%d, num_cols=%d, offd num_rows=%d, num_cols=%d\n",
-    rank_, hypre_CSRMatrixNumRows(diag), hypre_CSRMatrixNumCols(diag),
-    hypre_CSRMatrixNumRows(offd), hypre_CSRMatrixNumCols(offd));
+    rank_, nalu_hypre_CSRMatrixNumRows(diag), nalu_hypre_CSRMatrixNumCols(diag),
+    nalu_hypre_CSRMatrixNumRows(offd), nalu_hypre_CSRMatrixNumCols(offd));
   fclose(output_);
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreMatAssemblyTimer_.back() += msec;
+  nalu_hypreMatAssemblyTimer_.back() += msec;
   gettimeofday(&_start, NULL);
 #endif
 
-  HYPRE_IJVectorAssemble(rhs_);
-  HYPRE_IJVectorGetObject(rhs_, (void**)&(solver->parRhs_));
+  NALU_HYPRE_IJVectorAssemble(rhs_);
+  NALU_HYPRE_IJVectorGetObject(rhs_, (void**)&(solver->parRhs_));
 
-  HYPRE_IJVectorAssemble(sln_);
-  HYPRE_IJVectorGetObject(sln_, (void**)&(solver->parSln_));
+  NALU_HYPRE_IJVectorAssemble(sln_);
+  NALU_HYPRE_IJVectorGetObject(sln_, (void**)&(solver->parSln_));
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
          1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreRhsAssemblyTimer_.back() += msec;
+  nalu_hypreRhsAssemblyTimer_.back() += msec;
 #endif
 
   solver->comm_ = realm_.bulk_data().parallel();
@@ -1853,32 +1853,32 @@ HypreLinearSystem::loadComplete()
   /* finish assembly for the coupled overset case */
   finishCoupledOversetAssembly();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
 
   /* Matrix */
-  hypreIJMatrixSetAddToValues();
+  nalu_hypreIJMatrixSetAddToValues();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the stop time */
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreMatAssemblyTimer_.push_back(msec);
+  nalu_hypreMatAssemblyTimer_.push_back(msec);
   gettimeofday(&_start, NULL);
 #endif
 
   /* Rhs */
-  hypreIJVectorSetAddToValues();
+  nalu_hypreIJVectorSetAddToValues();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the stop time */
   gettimeofday(&_stop, NULL);
   msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
          1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreRhsAssemblyTimer_.push_back(msec);
+  nalu_hypreRhsAssemblyTimer_.push_back(msec);
 #endif
 
   /* Reset after assembly */
@@ -1896,8 +1896,8 @@ HypreLinearSystem::zeroSystem()
 
   MPI_Comm comm = realm_.bulk_data().parallel();
 
-  if (hypreMatrixVectorsCreated_) {
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+  if (nalu_hypreMatrixVectorsCreated_) {
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
     sprintf(oname_, "debug_out_%d.txt", rank_);
     output_ = fopen(oname_, "wt");
     fprintf(
@@ -1905,31 +1905,31 @@ HypreLinearSystem::zeroSystem()
       __FILE__, __FUNCTION__, __LINE__);
     fclose(output_);
 #endif
-    HYPRE_IJMatrixDestroy(mat_);
-    HYPRE_IJVectorDestroy(rhs_);
-    HYPRE_IJVectorDestroy(sln_);
-    hypreMatrixVectorsCreated_ = false;
+    NALU_HYPRE_IJMatrixDestroy(mat_);
+    NALU_HYPRE_IJVectorDestroy(rhs_);
+    NALU_HYPRE_IJVectorDestroy(sln_);
+    nalu_hypreMatrixVectorsCreated_ = false;
   }
 
-  HYPRE_IJMatrixCreate(comm, iLower_, iUpper_, jLower_, jUpper_, &mat_);
-  HYPRE_IJMatrixSetObjectType(mat_, HYPRE_PARCSR);
-  HYPRE_IJMatrixInitialize(mat_);
-  HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
-  HYPRE_IJMatrixSetConstantValues(mat_, 0.0);
+  NALU_HYPRE_IJMatrixCreate(comm, iLower_, iUpper_, jLower_, jUpper_, &mat_);
+  NALU_HYPRE_IJMatrixSetObjectType(mat_, NALU_HYPRE_PARCSR);
+  NALU_HYPRE_IJMatrixInitialize(mat_);
+  NALU_HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
+  NALU_HYPRE_IJMatrixSetConstantValues(mat_, 0.0);
 
-  HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &rhs_);
-  HYPRE_IJVectorSetObjectType(rhs_, HYPRE_PARCSR);
-  HYPRE_IJVectorInitialize(rhs_);
-  HYPRE_IJVectorGetObject(rhs_, (void**)&(solver->parRhs_));
-  HYPRE_ParVectorSetConstantValues(solver->parRhs_, 0.0);
+  NALU_HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &rhs_);
+  NALU_HYPRE_IJVectorSetObjectType(rhs_, NALU_HYPRE_PARCSR);
+  NALU_HYPRE_IJVectorInitialize(rhs_);
+  NALU_HYPRE_IJVectorGetObject(rhs_, (void**)&(solver->parRhs_));
+  NALU_HYPRE_ParVectorSetConstantValues(solver->parRhs_, 0.0);
 
-  HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &sln_);
-  HYPRE_IJVectorSetObjectType(sln_, HYPRE_PARCSR);
-  HYPRE_IJVectorInitialize(sln_);
-  HYPRE_IJVectorGetObject(sln_, (void**)&(solver->parSln_));
-  HYPRE_ParVectorSetConstantValues(solver->parSln_, 0.0);
+  NALU_HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &sln_);
+  NALU_HYPRE_IJVectorSetObjectType(sln_, NALU_HYPRE_PARCSR);
+  NALU_HYPRE_IJVectorInitialize(sln_);
+  NALU_HYPRE_IJVectorGetObject(sln_, (void**)&(solver->parSln_));
+  NALU_HYPRE_ParVectorSetConstantValues(solver->parSln_, 0.0);
 
-  hypreMatrixVectorsCreated_ = true;
+  nalu_hypreMatrixVectorsCreated_ = true;
 }
 
 sierra::nalu::CoeffApplier*
@@ -2074,9 +2074,9 @@ HypreLinearSystem::HypreLinSysCoeffApplier::sum_into(
   for (unsigned i = 0; i < numEntities; ++i) {
     auto node = entities[i];
     HypreIntType hid;
-    if (periodic_node_to_hypre_id_.exists(node.local_offset()))
-      hid = periodic_node_to_hypre_id_.value_at(
-        periodic_node_to_hypre_id_.find(node.local_offset()));
+    if (periodic_node_to_nalu_hypre_id_.exists(node.local_offset()))
+      hid = periodic_node_to_nalu_hypre_id_.value_at(
+        periodic_node_to_nalu_hypre_id_.find(node.local_offset()));
     else
       hid = ngpHypreGlobalId_.get(ngpMesh_, node, 0);
 
@@ -2176,9 +2176,9 @@ HypreLinearSystem::HypreLinSysCoeffApplier::sum_into_1DoF(
 
   for (unsigned i = 0; i < numEntities; ++i) {
     auto node = entities[i];
-    if (periodic_node_to_hypre_id_.exists(node.local_offset()))
-      localIds[i] = periodic_node_to_hypre_id_.value_at(
-        periodic_node_to_hypre_id_.find(node.local_offset()));
+    if (periodic_node_to_nalu_hypre_id_.exists(node.local_offset()))
+      localIds[i] = periodic_node_to_nalu_hypre_id_.value_at(
+        periodic_node_to_nalu_hypre_id_.find(node.local_offset()));
     else
       localIds[i] = ngpHypreGlobalId_.get(ngpMesh_, node, 0);
     sortPermutation[i] = i;
@@ -2274,9 +2274,9 @@ HypreLinearSystem::HypreLinSysCoeffApplier::reset_rows(
   for (unsigned i = 0; i < numNodes; ++i) {
     HypreIntType lid;
     auto node = nodeList[i];
-    if (periodic_node_to_hypre_id_.exists(node.local_offset()))
-      lid = periodic_node_to_hypre_id_.value_at(
-        periodic_node_to_hypre_id_.find(node.local_offset()));
+    if (periodic_node_to_nalu_hypre_id_.exists(node.local_offset()))
+      lid = periodic_node_to_nalu_hypre_id_.value_at(
+        periodic_node_to_nalu_hypre_id_.find(node.local_offset()));
     else
       lid = ngpHypreGlobalId_.get(ngpMesh_, node, 0);
 
@@ -2374,7 +2374,7 @@ HypreLinearSystem::sumInto(
   /* Pure host implementation */
   const size_t numEntities = entities.size();
   HypreIntType hid0 =
-    *stk::mesh::field_data(*realm_.hypreGlobalId_, entities[0]);
+    *stk::mesh::field_data(*realm_.nalu_hypreGlobalId_, entities[0]);
 
   if (hcApplier->oversetRowsMapHost_.exists(hid0)) {
     if (numDof_ == 1) {
@@ -2382,7 +2382,7 @@ HypreLinearSystem::sumInto(
         for (size_t i = 0; i < numEntities; ++i) {
           hcApplier->h_overset_rows_(hcApplier->overset_mat_counter_) = hid0;
           hcApplier->h_overset_cols_(hcApplier->overset_mat_counter_) =
-            *stk::mesh::field_data(*realm_.hypreGlobalId_, entities[i]);
+            *stk::mesh::field_data(*realm_.nalu_hypreGlobalId_, entities[i]);
           hcApplier->h_overset_vals_(hcApplier->overset_mat_counter_) = lhs[i];
           hcApplier->overset_mat_counter_++;
         }
@@ -2433,7 +2433,7 @@ HypreLinearSystem::applyDirichletBCs(
 
   /* data from hcApplier */
   const auto& ngpMesh = hcApplier->ngpMesh_;
-  const auto hypreGID = hcApplier->ngpHypreGlobalId_;
+  const auto nalu_hypreGID = hcApplier->ngpHypreGlobalId_;
   auto mat_row_start_owned = hcApplier->mat_row_start_owned_ra_;
   auto vals = hcApplier->values_dev_;
   auto rhs_vals = hcApplier->rhs_dev_;
@@ -2445,7 +2445,7 @@ HypreLinearSystem::applyDirichletBCs(
     "HypreLinearSystem::applyDirichletBCs", ngpMesh, stk::topology::NODE_RANK,
     selector, KOKKOS_LAMBDA(const Traits::MeshIndex& mi) {
       const auto node = (*mi.bucket)[mi.bucketOrd];
-      HypreIntType hid = hypreGID.get(ngpMesh, node, 0);
+      HypreIntType hid = nalu_hypreGID.get(ngpMesh, node, 0);
       for (unsigned d = 0; d < numDof; ++d) {
         HypreIntType lid = hid * numDof + d;
         unsigned matIndex = mat_row_start_owned(lid - iLower);
@@ -2457,14 +2457,14 @@ HypreLinearSystem::applyDirichletBCs(
 }
 
 HypreIntType
-HypreLinearSystem::get_entity_hypre_id(const stk::mesh::Entity& node)
+HypreLinearSystem::get_entity_nalu_hypre_id(const stk::mesh::Entity& node)
 {
   auto& bulk = realm_.bulk_data();
   const auto naluId = *stk::mesh::field_data(*realm_.naluGlobalId_, node);
   const auto mnode = (naluId == bulk.identifier(node))
                        ? node
                        : bulk.get_entity(stk::topology::NODE_RANK, naluId);
-  HypreIntType hid = *stk::mesh::field_data(*realm_.hypreGlobalId_, mnode);
+  HypreIntType hid = *stk::mesh::field_data(*realm_.nalu_hypreGlobalId_, mnode);
   return hid;
 }
 
@@ -2478,8 +2478,8 @@ HypreLinearSystem::solve(stk::mesh::FieldBase* linearSolutionField)
     std::string writeCounter = std::to_string(eqSys_->linsysWriteCounter_);
     const std::string matFile = eqSysName_ + ".IJM." + writeCounter + ".mat";
     const std::string rhsFile = eqSysName_ + ".IJV." + writeCounter + ".rhs";
-    HYPRE_IJMatrixPrint(mat_, matFile.c_str());
-    HYPRE_IJVectorPrint(rhs_, rhsFile.c_str());
+    NALU_HYPRE_IJMatrixPrint(mat_, matFile.c_str());
+    NALU_HYPRE_IJVectorPrint(rhs_, rhsFile.c_str());
   }
 
   int iters = 0;
@@ -2488,7 +2488,7 @@ HypreLinearSystem::solve(stk::mesh::FieldBase* linearSolutionField)
   // Call solve
   int status = 0;
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   output_ = fopen(oname_, "at");
   fprintf(
     output_, "%s %s %d %s : rank=%d\n", __FILE__, __FUNCTION__, __LINE__,
@@ -2497,7 +2497,7 @@ HypreLinearSystem::solve(stk::mesh::FieldBase* linearSolutionField)
 
   status = solver->solve(iters, finalResidNorm, realm_.isFinalOuterIter_);
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   output_ = fopen(oname_, "at");
   fprintf(
     output_, "%s %s %d %s : rank=%d\n", __FILE__, __FUNCTION__, __LINE__,
@@ -2510,7 +2510,7 @@ HypreLinearSystem::solve(stk::mesh::FieldBase* linearSolutionField)
   if (solver->getConfig()->getWriteMatrixFiles()) {
     std::string writeCounter = std::to_string(eqSys_->linsysWriteCounter_);
     const std::string slnFile = eqSysName_ + ".IJV." + writeCounter + ".sln";
-    HYPRE_IJVectorPrint(sln_, slnFile.c_str());
+    NALU_HYPRE_IJVectorPrint(sln_, slnFile.c_str());
   }
 
   HypreLinearSolverConfig* config =
@@ -2521,7 +2521,7 @@ HypreLinearSystem::solve(stk::mesh::FieldBase* linearSolutionField)
     ++eqSys_->linsysWriteCounter_;
   }
 
-  double norm2 = copy_hypre_to_stk(linearSolutionField);
+  double norm2 = copy_nalu_hypre_to_stk(linearSolutionField);
   sync_field(linearSolutionField);
 
   linearSolveIterations_ = iters;
@@ -2554,7 +2554,7 @@ HypreLinearSystem::solve(stk::mesh::FieldBase* linearSolutionField)
 }
 
 double
-HypreLinearSystem::copy_hypre_to_stk(stk::mesh::FieldBase* stkField)
+HypreLinearSystem::copy_nalu_hypre_to_stk(stk::mesh::FieldBase* stkField)
 {
   auto& meta = realm_.meta_data();
   const auto selector =
@@ -2570,7 +2570,7 @@ HypreLinearSystem::copy_hypre_to_stk(stk::mesh::FieldBase* stkField)
     stkField->mesh_meta_data_ordinal());
   auto ngpHypreGlobalId = hcApplier->ngpHypreGlobalId_;
   const auto& ngpMesh = hcApplier->ngpMesh_;
-  const auto periodic_node_to_hypre_id = hcApplier->periodic_node_to_hypre_id_;
+  const auto periodic_node_to_nalu_hypre_id = hcApplier->periodic_node_to_nalu_hypre_id_;
 
   auto iLower = iLower_;
   auto iUpper = iUpper_;
@@ -2579,18 +2579,18 @@ HypreLinearSystem::copy_hypre_to_stk(stk::mesh::FieldBase* stkField)
   /******************************/
   /* Move solution to stk field */
 
-  /* use internal hypre APIs to get directly at the pointer to the owned SLN
+  /* use internal nalu_hypre APIs to get directly at the pointer to the owned SLN
    * vector */
-  double* sln_data = hypre_VectorData(
-    hypre_ParVectorLocalVector((hypre_ParVector*)hypre_IJVectorObject(sln_)));
+  double* sln_data = nalu_hypre_VectorData(
+    nalu_hypre_ParVectorLocalVector((nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_)));
   nalu_ngp::run_entity_algorithm(
-    "HypreLinearSystem::copy_hypre_to_stk", ngpMesh, stk::topology::NODE_RANK,
+    "HypreLinearSystem::copy_nalu_hypre_to_stk", ngpMesh, stk::topology::NODE_RANK,
     selector, KOKKOS_LAMBDA(const Traits::MeshIndex& mi) {
       const auto node = (*mi.bucket)[mi.bucketOrd];
       HypreIntType hid;
-      if (periodic_node_to_hypre_id.exists(node.local_offset()))
-        hid = periodic_node_to_hypre_id.value_at(
-          periodic_node_to_hypre_id.find(node.local_offset()));
+      if (periodic_node_to_nalu_hypre_id.exists(node.local_offset()))
+        hid = periodic_node_to_nalu_hypre_id.value_at(
+          periodic_node_to_nalu_hypre_id.find(node.local_offset()));
       else
         hid = ngpHypreGlobalId.get(ngpMesh, node, 0);
 
@@ -2607,16 +2607,16 @@ HypreLinearSystem::copy_hypre_to_stk(stk::mesh::FieldBase* stkField)
   /* Compute RHS norm */
 #if 1
   /* Use Hypre internal APIs */
-  double gblnorm2 = hypre_ParVectorInnerProd(
-    (hypre_ParVector*)hypre_IJVectorObject(rhs_),
-    (hypre_ParVector*)hypre_IJVectorObject(rhs_));
+  double gblnorm2 = nalu_hypre_ParVectorInnerProd(
+    (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_),
+    (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_));
 #else
   double rhsnorm2 = 0.0;
 
-  /* use internal hypre APIs to get directly at the pointer to the owned RHS
+  /* use internal nalu_hypre APIs to get directly at the pointer to the owned RHS
    * vector */
-  double* rhs_data = hypre_VectorData(
-    hypre_ParVectorLocalVector((hypre_ParVector*)hypre_IJVectorObject(rhs_)));
+  double* rhs_data = nalu_hypre_VectorData(
+    nalu_hypre_ParVectorLocalVector((nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_)));
   Kokkos::parallel_reduce(
     "HypreLinearSystem::Reduction", DeviceRangePolicy(0, N),
     KOKKOS_LAMBDA(const int i, double& update) {
@@ -2629,7 +2629,7 @@ HypreLinearSystem::copy_hypre_to_stk(stk::mesh::FieldBase* stkField)
   stk::all_reduce_sum(bulk.parallel(), &rhsnorm2, &gblnorm2, 1);
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   scanBufferForBadValues(rhs_data, N, __FILE__, __FUNCTION__, __LINE__, "RHS");
   scanBufferForBadValues(sln_data, N, __FILE__, __FUNCTION__, __LINE__, "SLN");
 #endif
@@ -2637,7 +2637,7 @@ HypreLinearSystem::copy_hypre_to_stk(stk::mesh::FieldBase* stkField)
   return std::sqrt(gblnorm2);
 }
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
 void
 HypreLinearSystem::scanBufferForBadValues(
   double* ptr,

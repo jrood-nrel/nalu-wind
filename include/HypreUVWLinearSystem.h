@@ -7,8 +7,8 @@
 // for more details.
 //
 
-#ifndef HYPREUVWLINEARSYSTEM_H
-#define HYPREUVWLINEARSYSTEM_H
+#ifndef NALU_HYPREUVWLINEARSYSTEM_H
+#define NALU_HYPREUVWLINEARSYSTEM_H
 
 #include "HypreLinearSystem.h"
 #include "HypreUVWSolver.h"
@@ -65,7 +65,7 @@ public:
 
   virtual int solve(stk::mesh::FieldBase*);
 
-  void copy_hypre_to_stk(stk::mesh::FieldBase*, std::vector<double>&);
+  void copy_nalu_hypre_to_stk(stk::mesh::FieldBase*, std::vector<double>&);
 
   /** Populate the LHS and RHS for the Dirichlet rows in linear system
    */
@@ -141,7 +141,7 @@ public:
     virtual sierra::nalu::CoeffApplier* device_pointer();
   };
 
-  virtual void hypreIJVectorSetAddToValues();
+  virtual void nalu_hypreIJVectorSetAddToValues();
 
   /***************************************************************************************************/
   /*                        End of of HypreLinSysCoeffApplier definition */
@@ -202,8 +202,8 @@ private:
 
   std::array<double, 3> firstNLR_;
 
-  mutable std::vector<HYPRE_IJVector> rhs_;
-  mutable std::vector<HYPRE_IJVector> sln_;
+  mutable std::vector<NALU_HYPRE_IJVector> rhs_;
+  mutable std::vector<NALU_HYPRE_IJVector> sln_;
 
   const unsigned nDim_{3};
 };
@@ -211,4 +211,4 @@ private:
 } // namespace nalu
 } // namespace sierra
 
-#endif /* HYPREUVWLINEARSYSTEM_H */
+#endif /* NALU_HYPREUVWLINEARSYSTEM_H */

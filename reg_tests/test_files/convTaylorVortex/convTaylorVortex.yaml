@@ -15,8 +15,8 @@ linear_solvers:
     output_level: 0
 
   - name: solve_cont
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-12
     max_iterations: 200
@@ -26,10 +26,10 @@ linear_solvers:
     reuse_linear_system: yes
     recompute_preconditioner_frequency: 1
 
-    # File containing hypre specific configuration options
-    hypre_cfg_file: ../../hypre_settings/hypre_blade_resolved.yaml
+    # File containing nalu_hypre specific configuration options
+    nalu_hypre_cfg_file: ../../nalu_hypre_settings/nalu_hypre_blade_resolved.yaml
     # YAML node used for this linear solver
-    hypre_cfg_node: hypre_elliptic
+    nalu_hypre_cfg_node: nalu_hypre_elliptic
 
 realms:
 

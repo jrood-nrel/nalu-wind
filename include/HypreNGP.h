@@ -7,58 +7,58 @@
 // for more details.
 //
 
-#ifndef HYPRENGP_H
-#define HYPRENGP_H
+#ifndef NALU_HYPRENGP_H
+#define NALU_HYPRENGP_H
 
-#ifdef NALU_USES_HYPRE
-#include "HYPRE_config.h"
+#ifdef NALU_USES_NALU_HYPRE
+#include "NALU_HYPRE_config.h"
 #endif
 
-#ifdef HYPRE_USING_GPU
-#include "HYPRE_utilities.h"
+#ifdef NALU_HYPRE_USING_GPU
+#include "NALU_HYPRE_utilities.h"
 #include "krylov.h"
-#include "HYPRE.h"
-#include "_hypre_utilities.h"
-#include "_hypre_utilities.hpp"
+#include "NALU_HYPRE.h"
+#include "_nalu_hypre_utilities.h"
+#include "_nalu_hypre_utilities.hpp"
 #endif
 
 #include "NaluParsing.h"
 #include <yaml-cpp/yaml.h>
 
-namespace nalu_hypre {
+namespace nalu_nalu_hypre {
 
-#ifdef HYPRE_USING_GPU
+#ifdef NALU_HYPRE_USING_GPU
 
 inline void
-hypre_initialize()
+nalu_hypre_initialize()
 {
-  HYPRE_Init();
+  NALU_HYPRE_Init();
 }
 
 inline void
-hypre_set_params(YAML::Node nodes)
+nalu_hypre_set_params(YAML::Node nodes)
 {
-#ifdef HYPRE_USING_DEVICE_POOL
+#ifdef NALU_HYPRE_USING_DEVICE_POOL
   /* device pool allocator */
-  hypre_uint mempool_bin_growth = 8, mempool_min_bin = 3, mempool_max_bin = 9;
+  nalu_hypre_uint mempool_bin_growth = 8, mempool_min_bin = 3, mempool_max_bin = 9;
   size_t mempool_max_cached_bytes = 2000LL * 1024 * 1024;
 #endif
-#if defined(HYPRE_USING_UMPIRE_DEVICE)
+#if defined(NALU_HYPRE_USING_UMPIRE_DEVICE)
   long long device_pool_size = 4096LL * 1024 * 1024;
 #endif
   bool use_vendor_spgemm = false;
   bool use_vendor_spmv = false;
   bool use_vendor_sptrans = false;
 
-  const YAML::Node node = nodes["hypre_config"];
+  const YAML::Node node = nodes["nalu_hypre_config"];
   if (node) {
-#ifdef HYPRE_USING_DEVICE_POOL
+#ifdef NALU_HYPRE_USING_DEVICE_POOL
     int memory_pool_mbs = 2000;
     sierra::nalu::get_if_present(
       node, "memory_pool_mbs", memory_pool_mbs, memory_pool_mbs);
     mempool_max_cached_bytes = ((size_t)memory_pool_mbs) * 1024 * 1024;
 #endif
-#if defined(HYPRE_USING_UMPIRE_DEVICE)
+#if defined(NALU_HYPRE_USING_UMPIRE_DEVICE)
     int memory_pool_mbs = 4096;
     sierra::nalu::get_if_present(
       node, "umpire_device_pool_mbs", memory_pool_mbs, memory_pool_mbs);
@@ -73,82 +73,82 @@ hypre_set_params(YAML::Node nodes)
       node, "use_vendor_sptrans", use_vendor_sptrans, use_vendor_sptrans);
   }
 
-#ifdef HYPRE_USING_DEVICE_POOL
-  /* To be effective, hypre_SetCubMemPoolSize must immediately follow HYPRE_Init
+#ifdef NALU_HYPRE_USING_DEVICE_POOL
+  /* To be effective, nalu_hypre_SetCubMemPoolSize must immediately follow NALU_HYPRE_Init
    */
-  HYPRE_SetGPUMemoryPoolSize(
+  NALU_HYPRE_SetGPUMemoryPoolSize(
     mempool_bin_growth, mempool_min_bin, mempool_max_bin,
     mempool_max_cached_bytes);
 #endif
-#if defined(HYPRE_USING_UMPIRE_DEVICE)
+#if defined(NALU_HYPRE_USING_UMPIRE_DEVICE)
   if (device_pool_size) {
-    HYPRE_SetUmpireDevicePoolName("HYPRE_DEVICE_POOL");
-    HYPRE_SetUmpireDevicePoolSize(device_pool_size);
+    NALU_HYPRE_SetUmpireDevicePoolName("NALU_HYPRE_DEVICE_POOL");
+    NALU_HYPRE_SetUmpireDevicePoolSize(device_pool_size);
   }
 #endif
-  HYPRE_SetSpGemmUseVendor(use_vendor_spgemm);
-  HYPRE_SetSpMVUseVendor(use_vendor_spmv);
-  HYPRE_SetSpTransUseVendor(use_vendor_sptrans);
-  HYPRE_SetMemoryLocation(HYPRE_MEMORY_DEVICE);
-  HYPRE_SetExecutionPolicy(HYPRE_EXEC_DEVICE);
-  HYPRE_SetUseGpuRand(true);
+  NALU_HYPRE_SetSpGemmUseVendor(use_vendor_spgemm);
+  NALU_HYPRE_SetSpMVUseVendor(use_vendor_spmv);
+  NALU_HYPRE_SetSpTransUseVendor(use_vendor_sptrans);
+  NALU_HYPRE_SetMemoryLocation(NALU_HYPRE_MEMORY_DEVICE);
+  NALU_HYPRE_SetExecutionPolicy(NALU_HYPRE_EXEC_DEVICE);
+  NALU_HYPRE_SetUseGpuRand(true);
 }
 
 inline void
-hypre_set_params()
+nalu_hypre_set_params()
 {
-#ifdef HYPRE_USING_DEVICE_POOL
+#ifdef NALU_HYPRE_USING_DEVICE_POOL
   /* device pool allocator */
-  hypre_uint mempool_bin_growth = 8, mempool_min_bin = 3, mempool_max_bin = 9;
+  nalu_hypre_uint mempool_bin_growth = 8, mempool_min_bin = 3, mempool_max_bin = 9;
   size_t mempool_max_cached_bytes = 2000LL * 1024 * 1024;
 
-  /* To be effective, hypre_SetCubMemPoolSize must immediately follow HYPRE_Init
+  /* To be effective, nalu_hypre_SetCubMemPoolSize must immediately follow NALU_HYPRE_Init
    */
-  HYPRE_SetGPUMemoryPoolSize(
+  NALU_HYPRE_SetGPUMemoryPoolSize(
     mempool_bin_growth, mempool_min_bin, mempool_max_bin,
     mempool_max_cached_bytes);
 #endif
-#if defined(HYPRE_USING_UMPIRE_DEVICE)
+#if defined(NALU_HYPRE_USING_UMPIRE_DEVICE)
   long long device_pool_size = 4096LL * 1024 * 1024;
-  HYPRE_SetUmpireDevicePoolName("HYPRE_DEVICE_POOL");
-  HYPRE_SetUmpireDevicePoolSize(device_pool_size);
+  NALU_HYPRE_SetUmpireDevicePoolName("NALU_HYPRE_DEVICE_POOL");
+  NALU_HYPRE_SetUmpireDevicePoolSize(device_pool_size);
 #endif
 
-  HYPRE_SetSpGemmUseVendor(false);
-  HYPRE_SetMemoryLocation(HYPRE_MEMORY_DEVICE);
-  HYPRE_SetExecutionPolicy(HYPRE_EXEC_DEVICE);
-  HYPRE_SetUseGpuRand(true);
+  NALU_HYPRE_SetSpGemmUseVendor(false);
+  NALU_HYPRE_SetMemoryLocation(NALU_HYPRE_MEMORY_DEVICE);
+  NALU_HYPRE_SetExecutionPolicy(NALU_HYPRE_EXEC_DEVICE);
+  NALU_HYPRE_SetUseGpuRand(true);
 }
 
 inline void
-hypre_finalize()
+nalu_hypre_finalize()
 {
-  HYPRE_Finalize();
+  NALU_HYPRE_Finalize();
 }
 
 #else
 
 inline void
-hypre_initialize()
+nalu_hypre_initialize()
 {
 }
 
 inline void
-hypre_set_params(YAML::Node nodes)
+nalu_hypre_set_params(YAML::Node nodes)
 {
 }
 
 inline void
-hypre_set_params()
+nalu_hypre_set_params()
 {
 }
 
 inline void
-hypre_finalize()
+nalu_hypre_finalize()
 {
 }
 
 #endif
-} // namespace nalu_hypre
+} // namespace nalu_nalu_hypre
 
-#endif /* HYPRENGP_H */
+#endif /* NALU_HYPRENGP_H */

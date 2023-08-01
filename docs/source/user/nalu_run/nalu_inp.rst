@@ -105,7 +105,7 @@ entries:
    Type               Description
    ================== ==========================================================
    ``tpetra``         Tpetra data structures and Belos solvers/preconditioners
-   ``hypre``          Hypre data structures and Hypre solver/preconditioners
+   ``nalu_hypre``          Hypre data structures and Hypre solver/preconditioners
    ================== ==========================================================
 
 .. inpfile:: linear_solvers.method
@@ -113,8 +113,8 @@ entries:
    The solver used for solving the linear system.
 
    When :inpfile:`linear_solvers.type` is ``tpetra`` the valid options are:
-   ``gmres``, ``biCgStab``, ``cg``. For ``hypre`` the valid
-   options are ``hypre_boomerAMG`` and ``hypre_gmres``.
+   ``gmres``, ``biCgStab``, ``cg``. For ``nalu_hypre`` the valid
+   options are ``nalu_hypre_boomerAMG`` and ``nalu_hypre_gmres``.
 
 **Options Common to both Solver Libraries**
 
@@ -123,7 +123,7 @@ entries:
    The type of preconditioner used.
 
    When :inpfile:`linear_solvers.type` is ``tpetra`` the valid options are
-   ``sgs``, ``mt_sgs``, ``muelu``. For ``hypre`` the valid
+   ``sgs``, ``mt_sgs``, ``muelu``. For ``nalu_hypre`` the valid
    options are ``boomerAMG`` or ``none``.
 
 .. inpfile:: linear_solvers.tolerance
@@ -173,7 +173,7 @@ entries:
 **Additional parameters for Hypre Solver/Preconditioners**
 
 The user is referred to `Hypre Reference Manual
-<https://computation.llnl.gov/projects/hypre-scalable-linear-solvers-multigrid-methods/software>`_
+<https://computation.llnl.gov/projects/nalu_hypre-scalable-linear-solvers-multigrid-methods/software>`_
 for full details on the usage of the parameters described briefly below.
 
 The parameters that start with ``bamg_`` prefix refer to options related to
@@ -182,35 +182,35 @@ Hypre's BoomerAMG preconditioner.
 .. inpfile:: linear_solvers.bamg_output_level
 
    The level of verbosity of BoomerAMG preconditioner. See
-   ``HYPRE_BoomerAMGSetPrintLevel``. Default: 0.
+   ``NALU_HYPRE_BoomerAMGSetPrintLevel``. Default: 0.
 
 .. inpfile:: linear_solvers.bamg_coarsen_type
 
-   See ``HYPRE_BoomerAMGSetCoarsenType``. Default: 6
+   See ``NALU_HYPRE_BoomerAMGSetCoarsenType``. Default: 6
 
 .. inpfile:: linear_solvers.bamg_cycle_type
 
-   See ``HYPRE_BoomerAMGSetCycleType``. Default: 1
+   See ``NALU_HYPRE_BoomerAMGSetCycleType``. Default: 1
 
 .. inpfile:: linear_solvers.bamg_relax_type
 
-   See ``HYPRE_BoomerAMGSetRelaxType``. Default: 6
+   See ``NALU_HYPRE_BoomerAMGSetRelaxType``. Default: 6
 
 .. inpfile:: linear_solvers.bamg_relax_order
 
-   See ``HYPRE_BoomerAMGSetRelaxOrder``. Default: 1
+   See ``NALU_HYPRE_BoomerAMGSetRelaxOrder``. Default: 1
 
 .. inpfile:: linear_solvers.bamg_num_sweeps
 
-   See ``HYPRE_BoomerAMGSetNumSweeps``. Default: 2
+   See ``NALU_HYPRE_BoomerAMGSetNumSweeps``. Default: 2
 
 .. inpfile:: linear_solvers.bamg_max_levels
 
-   See ``HYPRE_BoomerAMGSetMaxLevels``. Default: 20
+   See ``NALU_HYPRE_BoomerAMGSetMaxLevels``. Default: 20
 
 .. inpfile:: linear_solvers.bamg_strong_threshold
 
-   See ``HYPRE_BoomerAMGSetStrongThreshold``. Default: 0.25
+   See ``NALU_HYPRE_BoomerAMGSetStrongThreshold``. Default: 0.25
 
 .. _nalu_inp_time_integrators:
 

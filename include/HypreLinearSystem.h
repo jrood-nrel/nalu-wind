@@ -7,18 +7,18 @@
 // for more details.
 //
 
-#ifndef HYPRELINEARSYSTEM_H
-#define HYPRELINEARSYSTEM_H
+#ifndef NALU_HYPRELINEARSYSTEM_H
+#define NALU_HYPRELINEARSYSTEM_H
 
-#ifndef HYPRE_LINEAR_SYSTEM_TIMER
-#define HYPRE_LINEAR_SYSTEM_TIMER
-#endif // HYPRE_LINEAR_SYSTEM_TIMER
-#undef HYPRE_LINEAR_SYSTEM_TIMER
+#ifndef NALU_HYPRE_LINEAR_SYSTEM_TIMER
+#define NALU_HYPRE_LINEAR_SYSTEM_TIMER
+#endif // NALU_HYPRE_LINEAR_SYSTEM_TIMER
+#undef NALU_HYPRE_LINEAR_SYSTEM_TIMER
 
-#ifndef HYPRE_LINEAR_SYSTEM_DEBUG
-#define HYPRE_LINEAR_SYSTEM_DEBUG
-#endif // HYPRE_LINEAR_SYSTEM_DEBUG
-#undef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifndef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
+#define NALU_HYPRE_LINEAR_SYSTEM_DEBUG
+#endif // NALU_HYPRE_LINEAR_SYSTEM_DEBUG
+#undef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
 
 #include "KokkosInterface.h"
 #include <Kokkos_UnorderedMap.hpp>
@@ -91,7 +91,7 @@ using PeriodicNodeMapHost = PeriodicNodeMap::HostMirror;
 
 /** Nalu interface to populate a Hypre Linear System
  *
- *  This class provides an interface to the HYPRE IJMatrix and IJVector data
+ *  This class provides an interface to the NALU_HYPRE IJMatrix and IJVector data
  *  structures. It is responsible for creating, resetting, and destroying the
  *  Hypre data structures and provides the HypreLinearSystem::sumInto interface
  *  used by Nalu Kernels and SupplementalAlgorithms to populate entries into the
@@ -153,12 +153,12 @@ public:
   HypreIntTypeView2D rhs_rows_dev_;
   HypreIntTypeView2DHost rhs_rows_host_;
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   FILE* output_ = NULL;
   char oname_[50];
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   struct timeval _start, _stop;
   std::vector<double> buildBeginLinSysConstTimer_;
   std::vector<double> buildNodeGraphTimer_;
@@ -170,8 +170,8 @@ public:
   std::vector<double> buildDirichletNodeGraphTimer_;
   std::vector<double> buildGraphTimer_;
   std::vector<double> finalizeLinearSystemTimer_;
-  std::vector<double> hypreMatAssemblyTimer_;
-  std::vector<double> hypreRhsAssemblyTimer_;
+  std::vector<double> nalu_hypreMatAssemblyTimer_;
+  std::vector<double> nalu_hypreRhsAssemblyTimer_;
 #endif
 
   // Quiet "partially overridden" compiler warnings.
@@ -233,11 +233,11 @@ public:
    */
   virtual int solve(stk::mesh::FieldBase* linearSolutionField);
 
-  //! Helper method to transfer the solution from a HYPRE_IJVector instance to
+  //! Helper method to transfer the solution from a NALU_HYPRE_IJVector instance to
   //! the STK field data instance.
-  double copy_hypre_to_stk(stk::mesh::FieldBase*);
+  double copy_nalu_hypre_to_stk(stk::mesh::FieldBase*);
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   void scanBufferForBadValues(
     double* ptr,
     int N,
@@ -277,8 +277,8 @@ public:
   virtual void buildCoeffApplierPeriodicNodeToHIDMapping();
   virtual void resetCoeffApplierData();
   virtual void finishCoupledOversetAssembly();
-  virtual void hypreIJMatrixSetAddToValues();
-  virtual void hypreIJVectorSetAddToValues();
+  virtual void nalu_hypreIJMatrixSetAddToValues();
+  virtual void nalu_hypreIJVectorSetAddToValues();
   virtual void buildCoeffApplierDeviceOwnedDataStructures();
   virtual void buildCoeffApplierDeviceSharedDataStructures();
   virtual void buildCoeffApplierDeviceDataStructures();
@@ -412,8 +412,8 @@ public:
 
     //! Auxilliary Data structures
 
-    //! map of the periodic nodes to hypre ids
-    PeriodicNodeMap periodic_node_to_hypre_id_;
+    //! map of the periodic nodes to nalu_hypre ids
+    PeriodicNodeMap periodic_node_to_nalu_hypre_id_;
 
     //! Flag indicating that sumInto should check to see if rows must be skipped
     HypreIntTypeViewScalar checkSkippedRows_;
@@ -534,9 +534,9 @@ public:
 protected:
   /** Prepare the instance for system construction
    *
-   *  During initialization, this creates the hypre data structures via API
-   *  calls. It also synchronizes hypreGlobalId across shared and ghosted data
-   *  so that hypre row ID lookups succeed during initialization and assembly.
+   *  During initialization, this creates the nalu_hypre data structures via API
+   *  calls. It also synchronizes nalu_hypreGlobalId across shared and ghosted data
+   *  so that nalu_hypre row ID lookups succeed during initialization and assembly.
    */
   virtual void beginLinearSystemConstruction();
 
@@ -546,16 +546,16 @@ protected:
    *
    *  @param[in] entity The STK node entity object
    *
-   *  @return The HYPRE row ID
+   *  @return The NALU_HYPRE row ID
    */
-  HypreIntType get_entity_hypre_id(const stk::mesh::Entity&);
+  HypreIntType get_entity_nalu_hypre_id(const stk::mesh::Entity&);
 
   /** Dummy method to satisfy inheritance
    */
   void checkError(const int, const char*) {}
 
-  //! The HYPRE matrix data structure
-  mutable HYPRE_IJMatrix mat_;
+  //! The NALU_HYPRE matrix data structure
+  mutable NALU_HYPRE_IJMatrix mat_;
 
   //! Track which rows are skipped
   std::unordered_set<HypreIntType> skippedRows_;
@@ -581,20 +581,20 @@ protected:
   HypreIntType maxRowID_;
 
   //! Flag indicating whether IJMatrixAssemble has been called on the system
-  bool hypreMatrixVectorsCreated_{false};
+  bool nalu_hypreMatrixVectorsCreated_{false};
 
   //! Flag indicating whether the linear system has been initialized
   bool matrixStatsDumped_{false};
 
 private:
-  //! HYPRE right hand side data structure
-  mutable HYPRE_IJVector rhs_;
+  //! NALU_HYPRE right hand side data structure
+  mutable NALU_HYPRE_IJVector rhs_;
 
-  //! HYPRE solution vector
-  mutable HYPRE_IJVector sln_;
+  //! NALU_HYPRE solution vector
+  mutable NALU_HYPRE_IJVector sln_;
 };
 
 } // namespace nalu
 } // namespace sierra
 
-#endif /* HYPRELINEARSYSTEM_H */
+#endif /* NALU_HYPRELINEARSYSTEM_H */

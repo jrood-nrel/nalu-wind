@@ -209,7 +209,7 @@ if(NOT ENABLE_CUDA AND NOT ENABLE_ROCM)
   endif()
 
 
-  if(ENABLE_HYPRE)
+  if(ENABLE_NALU_HYPRE)
     add_test_r(ablNeutralNGPHypre 2)
     add_test_r(ablNeutralNGPHypreSegregated 2)
     add_test_r(airfoilRANSEdgeNGPHypre.rst 2)
@@ -250,7 +250,7 @@ if(NOT ENABLE_CUDA AND NOT ENABLE_ROCM)
     add_test_r(oversetRotCylNGPTrilinos 2)
   endif()
 
-  if (ENABLE_TIOGA AND ENABLE_HYPRE)
+  if (ENABLE_TIOGA AND ENABLE_NALU_HYPRE)
     add_test_r(oversetRotCylNGPHypre 2)
     if (ENABLE_TRILINOS_SOLVERS)
       add_test_r(oversetRotCylinderHypre 2)
@@ -263,7 +263,7 @@ if(NOT ENABLE_CUDA AND NOT ENABLE_ROCM)
   #=============================================================================
   # Comparing solution norm tests
   #=============================================================================
-  if(ENABLE_HYPRE AND ENABLE_TRILINOS_SOLVERS)
+  if(ENABLE_NALU_HYPRE AND ENABLE_TRILINOS_SOLVERS)
     add_test_v_sol_norm(convTaylorVortex 2)
   endif()
 
@@ -303,7 +303,7 @@ else()
     add_subdirectory(test_files/nrel5MWactuatorLine)
   endif()
 
-  if(ENABLE_HYPRE)
+  if(ENABLE_NALU_HYPRE)
     add_test_r(fsiTurbineSurrogate 2)
     add_test_r(airfoilRANSEdgeNGPHypre.rst 2)
     add_test_r(ablNeutralNGPHypre 2)
@@ -316,7 +316,7 @@ else()
     add_test_r(oversetRotCylNGPTrilinos 2)
   endif()
 
-  if (ENABLE_TIOGA AND ENABLE_HYPRE)
+  if (ENABLE_TIOGA AND ENABLE_NALU_HYPRE)
     add_test_r(oversetRotCylNGPHypre 2)
   endif()
 
@@ -329,7 +329,7 @@ else()
   #=============================================================================
   # Comparing solution norm tests
   #=============================================================================
-  if(ENABLE_HYPRE)
+  if(ENABLE_NALU_HYPRE)
     add_test_v_sol_norm(convTaylorVortex 2)
   endif()
 

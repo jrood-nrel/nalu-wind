@@ -15,7 +15,7 @@ option(ENABLE_DOCUMENTATION "Build documentation." OFF)
 option(ENABLE_SPHINX_API_DOCS "Link Doxygen API docs to Sphinx" OFF)
 option(ENABLE_WIND_UTILS "Build wind utils along with Nalu-Wind" OFF)
 option(ENABLE_FFTW "Use the FFTW library to support ABLTopBC" OFF)
-option(ENABLE_HYPRE "Use HYPRE Solver library" ON)
+option(ENABLE_NALU_HYPRE "Use NALU_HYPRE Solver library" ON)
 option(ENABLE_TRILINOS_SOLVERS "Use Trilinos Solvers" ON)
 
 option(ENABLE_OPENFAST
@@ -36,7 +36,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED)
 
-if(NOT ENABLE_HYPRE AND NOT ENABLE_TRILINOS_SOLVERS)
+if(NOT ENABLE_NALU_HYPRE AND NOT ENABLE_TRILINOS_SOLVERS)
   message(FATAL_ERROR "Hypre and Trilinos-solvers both disabled, must enable at least one or the other.")
 endif()
 
@@ -157,20 +157,20 @@ if(ENABLE_FFTW)
   target_compile_definitions(nalu PUBLIC NALU_USES_FFTW)
 endif()
 
-############################ HYPRE #####################################
-if(ENABLE_HYPRE)
-  set(CMAKE_PREFIX_PATH ${HYPRE_DIR} ${CMAKE_PREFIX_PATH})
-  find_package(HYPRE 2.18.2 REQUIRED)
-  message(STATUS "Found HYPRE = ${HYPRE_DIR}")
-  target_link_libraries(nalu PUBLIC ${HYPRE_LIBRARIES})
-  target_include_directories(nalu SYSTEM PUBLIC ${HYPRE_INCLUDE_DIRS})
-  target_compile_definitions(nalu PUBLIC NALU_USES_HYPRE)
+############################ NALU_HYPRE #####################################
+if(ENABLE_NALU_HYPRE)
+  set(CMAKE_PREFIX_PATH ${NALU_HYPRE_DIR} ${CMAKE_PREFIX_PATH})
+  find_package(NALU_HYPRE 2.18.2 REQUIRED)
+  message(STATUS "Found NALU_HYPRE = ${NALU_HYPRE_DIR}")
+  target_link_libraries(nalu PUBLIC ${NALU_HYPRE_LIBRARIES})
+  target_include_directories(nalu SYSTEM PUBLIC ${NALU_HYPRE_INCLUDE_DIRS})
+  target_compile_definitions(nalu PUBLIC NALU_USES_NALU_HYPRE)
   include(CheckCXXSymbolExists)
   check_cxx_symbol_exists(
-    HYPRE_BIGINT "${HYPRE_INCLUDE_DIRS}/HYPRE_config.h" NALU_HYPRE_BIGINT)
+    NALU_HYPRE_BIGINT "${NALU_HYPRE_INCLUDE_DIRS}/NALU_HYPRE_config.h" NALU_HYPRE_BIGINT)
   if(NOT NALU_HYPRE_BIGINT AND NOT ENABLE_CUDA)
     message(STATUS
-      "HYPRE does not enable 64-bit integer support; will fail on large problems!")
+      "NALU_HYPRE does not enable 64-bit integer support; will fail on large problems!")
   endif()
 endif()
 
@@ -361,6 +361,6 @@ install(FILES
 
 # Provide CMake files for downstream projects
 install(FILES
-  ${PROJECT_SOURCE_DIR}/cmake/FindHYPRE.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/FindNALU_HYPRE.cmake
   ${PROJECT_SOURCE_DIR}/cmake/FindFFTW.cmake
   DESTINATION ${CMAKE_INSTALL_DATADIR}/cmake/Modules)

@@ -30,8 +30,8 @@ linear_solvers:
     muelu_xml_file_name: ../../xml/milestone.xml
 
   - name: solve_cont
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-6
     max_iterations: 200

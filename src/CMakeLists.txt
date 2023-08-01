@@ -104,7 +104,7 @@ if(ENABLE_FFTW)
     nalu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AssembleMomentumEdgeABLTopBC.C)
 endif(ENABLE_FFTW)
 
-if(ENABLE_HYPRE)
+if(ENABLE_NALU_HYPRE)
   target_sources(
     nalu
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/HypreDirectSolver.C
@@ -112,7 +112,7 @@ if(ENABLE_HYPRE)
             ${CMAKE_CURRENT_SOURCE_DIR}/HypreLinearSolverConfig.C
             ${CMAKE_CURRENT_SOURCE_DIR}/HypreLinearSystem.C
             ${CMAKE_CURRENT_SOURCE_DIR}/HypreUVWLinearSystem.C)
-endif(ENABLE_HYPRE)
+endif(ENABLE_NALU_HYPRE)
 
 if(ENABLE_MATRIXFREE)
   target_sources(

@@ -227,7 +227,7 @@ Simulation::high_level_banner()
 #ifdef NALU_USES_OPENFAST
   additionalTPLs.push_back("OpenFAST");
 #endif
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
   additionalTPLs.push_back("Hypre");
 #endif
 #ifdef NALU_USES_TIOGA

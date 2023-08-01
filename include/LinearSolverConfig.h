@@ -144,7 +144,7 @@ public:
   }
 
 protected:
-  //! List of HYPRE API calls and corresponding arugments to configure solver
+  //! List of NALU_HYPRE API calls and corresponding arugments to configure solver
   //! and preconditioner after they are created.
   std::vector<Teuchos::RCP<Ifpack2::FunctionParameter>> funcParams_;
 
@@ -154,7 +154,7 @@ protected:
   //! Maximum iterations to attempt if convergence is not met
   int maxIterations_{50};
 
-  //! Verbosity of the HYPRE solver
+  //! Verbosity of the NALU_HYPRE solver
   int outputLevel_{1};
 
   //! Krylov vector space used for GMRES solvers
@@ -192,15 +192,15 @@ private:
 
   void euclid_precond_config(const YAML::Node&);
 
-  void hypre_gmres_solver_config(const YAML::Node&);
-  void hypre_cogmres_solver_config(const YAML::Node&);
-  void hypre_lgmres_solver_config(const YAML::Node&);
-  void hypre_flexgmres_solver_config(const YAML::Node&);
-  void hypre_pcg_solver_config(const YAML::Node&);
-  void hypre_bicgstab_solver_config(const YAML::Node&);
+  void nalu_hypre_gmres_solver_config(const YAML::Node&);
+  void nalu_hypre_cogmres_solver_config(const YAML::Node&);
+  void nalu_hypre_lgmres_solver_config(const YAML::Node&);
+  void nalu_hypre_flexgmres_solver_config(const YAML::Node&);
+  void nalu_hypre_pcg_solver_config(const YAML::Node&);
+  void nalu_hypre_bicgstab_solver_config(const YAML::Node&);
 
-  void configure_hypre_preconditioner(const YAML::Node&);
-  void configure_hypre_solver(const YAML::Node&);
+  void configure_nalu_hypre_preconditioner(const YAML::Node&);
+  void configure_nalu_hypre_solver(const YAML::Node&);
 };
 
 } // namespace nalu

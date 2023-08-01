@@ -5,15 +5,15 @@ Simulations:
   optimizer: opt1
 
 # Hypre memory and other configurations
-hypre_config:
+nalu_hypre_config:
     memory_pool_mbs: 3000
     use_vendor_sgemm: no
 
 linear_solvers:
   # solver for the momentum
   - name: solve_mom
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-5
     max_iterations: 100
@@ -23,8 +23,8 @@ linear_solvers:
     #write_preassembly_matrix_files: yes
     recompute_preconditioner_frequency: 1
     reuse_linear_system: yes
-    simple_hypre_matrix_assemble: yes
-    dump_hypre_matrix_stats: no
+    simple_nalu_hypre_matrix_assemble: yes
+    dump_nalu_hypre_matrix_stats: no
 
     bamg_max_levels: 1
     bamg_relax_type: 12
@@ -38,8 +38,8 @@ linear_solvers:
 
   # solver for the scalars TKE, SDR
   - name: solve_scalar
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-5
     max_iterations: 100
@@ -48,8 +48,8 @@ linear_solvers:
     #write_preassembly_matrix_files: yes
     recompute_preconditioner_frequency: 1
     reuse_linear_system: yes
-    simple_hypre_matrix_assemble: yes
-    dump_hypre_matrix_stats: no
+    simple_nalu_hypre_matrix_assemble: yes
+    dump_nalu_hypre_matrix_stats: no
 
     bamg_max_levels: 1
     bamg_relax_type: 12
@@ -63,8 +63,8 @@ linear_solvers:
 
   # solver for the pressure
   - name: solve_elliptic
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-5
     max_iterations: 100
@@ -73,8 +73,8 @@ linear_solvers:
     #write_preassembly_matrix_files: yes
     recompute_preconditioner_frequency: 1
     reuse_linear_system: yes
-    simple_hypre_matrix_assemble: yes
-    dump_hypre_matrix_stats: no
+    simple_nalu_hypre_matrix_assemble: yes
+    dump_nalu_hypre_matrix_stats: no
 
     #bamg_max_levels: 7
     bamg_coarsen_type: 8
@@ -103,8 +103,8 @@ linear_solvers:
 
   # solver for the wall
   - name: solve_wall
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-5
     max_iterations: 100
@@ -113,8 +113,8 @@ linear_solvers:
     #write_preassembly_matrix_files: yes
     recompute_preconditioner_frequency: 1
     reuse_linear_system: yes
-    simple_hypre_matrix_assemble: yes
-    dump_hypre_matrix_stats: no
+    simple_nalu_hypre_matrix_assemble: yes
+    dump_nalu_hypre_matrix_stats: no
 
     bamg_max_levels: 7
     bamg_coarsen_type: 8

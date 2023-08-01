@@ -7,8 +7,8 @@
 // for more details.
 //
 
-#ifndef HYPREUVWSOLVER_H
-#define HYPREUVWSOLVER_H
+#ifndef NALU_HYPREUVWSOLVER_H
+#define NALU_HYPREUVWSOLVER_H
 
 #include "HypreDirectSolver.h"
 
@@ -25,11 +25,11 @@ public:
   int solve(int, int&, double&, bool);
 
   //! Return the type of solver instance
-  virtual PetraType getType() { return PT_HYPRE_SEGREGATED; }
+  virtual PetraType getType() { return PT_NALU_HYPRE_SEGREGATED; }
 
-  mutable std::vector<HYPRE_ParVector> parRhsU_;
+  mutable std::vector<NALU_HYPRE_ParVector> parRhsU_;
 
-  mutable std::vector<HYPRE_ParVector> parSlnU_;
+  mutable std::vector<NALU_HYPRE_ParVector> parSlnU_;
 
 protected:
   virtual void setupSolver();
@@ -42,4 +42,4 @@ private:
 } // namespace nalu
 } // namespace sierra
 
-#endif /* HYPREUVWSOLVER_H */
+#endif /* NALU_HYPREUVWSOLVER_H */

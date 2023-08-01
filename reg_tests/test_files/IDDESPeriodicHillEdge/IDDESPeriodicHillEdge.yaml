@@ -15,8 +15,8 @@ linear_solvers:
     output_level: 0
 
   - name: solve_cont
-    type: hypre
-    method: hypre_gmres
+    type: nalu_hypre
+    method: nalu_hypre_gmres
     preconditioner: boomerAMG
     tolerance: 1e-5
     max_iterations: 50

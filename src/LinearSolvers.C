@@ -15,7 +15,7 @@
 #include <Simulation.h>
 #include <Teuchos_ParameterList.hpp>
 
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
 #include "HypreDirectSolver.h"
 #include "HypreUVWSolver.h"
 #endif
@@ -37,7 +37,7 @@ LinearSolvers::~LinearSolvers()
     delete pos->second;
 #endif
 
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
   for (auto item : solverHypreConfig_) {
     delete (item.second);
   }
@@ -55,9 +55,9 @@ LinearSolvers::load(const YAML::Node& node)
       std::string solver_type = "tpetra";
       // this used to be "tpetra" unconditionally.
       // now it is ifdef'd, but we are guaranteed that
-      // if TRILINOS_SOLVERS is off, then HYPRE is on.
+      // if TRILINOS_SOLVERS is off, then NALU_HYPRE is on.
 #else
-      std::string solver_type = "hypre";
+      std::string solver_type = "nalu_hypre";
 #endif
       get_if_present_no_default(linear_solver_node, "type", solver_type);
       // proceed with the single supported solver strategy
@@ -71,14 +71,14 @@ LinearSolvers::load(const YAML::Node& node)
         throw std::runtime_error(
           "Trilinos solver support must be enabled during compile time.");
 #endif
-      } else if (solver_type == "hypre") {
-#ifdef NALU_USES_HYPRE
+      } else if (solver_type == "nalu_hypre") {
+#ifdef NALU_USES_NALU_HYPRE
         HypreLinearSolverConfig* linSolverCfg = new HypreLinearSolverConfig();
         linSolverCfg->load(linear_solver_node);
         solverHypreConfig_[linSolverCfg->name()] = linSolverCfg;
 #else
         throw std::runtime_error(
-          "HYPRE support must be enabled during compile time.");
+          "NALU_HYPRE support must be enabled during compile time.");
 #endif
       } else if (solver_type == "epetra") {
         throw std::runtime_error("epetra solver_type has been deprecated");
@@ -129,7 +129,7 @@ LinearSolvers::create_solver(
       "Trilinos solver support not enabled during compile time.");
 #endif
   }
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
   else {
     auto hIter = solverHypreConfig_.find(solverBlockName);
     if (hIter != solverHypreConfig_.end()) {

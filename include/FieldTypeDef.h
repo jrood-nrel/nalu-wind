@@ -20,8 +20,8 @@
 #endif
 #include <functional>
 
-#ifdef NALU_USES_HYPRE
-#include "HYPRE_utilities.h"
+#ifdef NALU_USES_NALU_HYPRE
+#include "NALU_HYPRE_utilities.h"
 #endif
 
 namespace sierra {
@@ -49,8 +49,8 @@ typedef unsigned LocalId;
 typedef stk::mesh::Field<LocalId> LocalIdFieldType;
 
 // Hypre Integer types
-#ifdef NALU_USES_HYPRE
-typedef HYPRE_Int HypreIntType;
+#ifdef NALU_USES_NALU_HYPRE
+typedef NALU_HYPRE_Int HypreIntType;
 #else
 typedef int HypreIntType;
 #endif

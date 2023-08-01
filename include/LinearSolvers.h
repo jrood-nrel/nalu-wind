@@ -81,7 +81,7 @@ public:
   SolverTpetraConfigMap solverTpetraConfig_;
 
   //! A lookup table of solver configurations against the names provided in the
-  //! input file when `type` is `hypre` or `tpetra_hypre`
+  //! input file when `type` is `nalu_hypre` or `tpetra_nalu_hypre`
   HypreSolverConfigMap solverHypreConfig_;
 
   //! Reference to the sierra::nalu::Simulation instance

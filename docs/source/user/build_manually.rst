@@ -293,22 +293,22 @@ Make sure all other paths to netcdf, hdf5, etc., are correct.
     make
     make install
 
-HYPRE
+NALU_HYPRE
 ~~~~~
 
-Nalu-Wind can use HYPRE solvers and preconditioners, especially for Pressure Poisson
+Nalu-Wind can use NALU_HYPRE solvers and preconditioners, especially for Pressure Poisson
 solves. However, this dependency is optional and is not enabled by default.
-Users wishing to use HYPRE solver and preconditioner combination must compile
-HYPRE library and link to it when building Nalu-Wind.
+Users wishing to use NALU_HYPRE solver and preconditioner combination must compile
+NALU_HYPRE library and link to it when building Nalu-Wind.
 
 .. code-block:: bash
 
-   # 1. Clone hypre sources
-   https://github.com/LLNL/hypre.git
-   cd hypre/src
+   # 1. Clone nalu_hypre sources
+   https://github.com/LLNL/nalu_hypre.git
+   cd nalu_hypre/src
 
-   # 2. Configure HYPRE package and pass installation directory
-   ./configure --prefix=${NALU_ROOT_DIR}/install/hypre --without-superlu --without-openmp --enable-bigint
+   # 2. Configure NALU_HYPRE package and pass installation directory
+   ./configure --prefix=${NALU_ROOT_DIR}/install/nalu_hypre --without-superlu --without-openmp --enable-bigint
 
    # 3. Compile and install
    make && make install
@@ -319,9 +319,9 @@ HYPRE library and link to it when building Nalu-Wind.
       run linear systems with :math:`> 2` billion rows. Otherwise, ``nalu``
       executable will throw an error at runtime for large problems.
 
-   #. Users must pass ``-DENABLE_HYPRE`` option to CMake during Nalu-Wind
-      configuration phase. Optionally, the variable `-DHYPRE_DIR`` can be used
-      to pass the path of HYPRE install location to CMake.
+   #. Users must pass ``-DENABLE_NALU_HYPRE`` option to CMake during Nalu-Wind
+      configuration phase. Optionally, the variable `-DNALU_HYPRE_DIR`` can be used
+      to pass the path of NALU_HYPRE install location to CMake.
 
 
 ParaView Catalyst

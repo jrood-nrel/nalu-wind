@@ -269,11 +269,11 @@ public:
 
   void set_global_id();
 
-  /** Initialize the HYPRE global row IDs
+  /** Initialize the NALU_HYPRE global row IDs
    *
-   *  \sa Realm::hypreGlobalId_
+   *  \sa Realm::nalu_hypreGlobalId_
    */
-  void set_hypre_global_id();
+  void set_nalu_hypre_global_id();
 
   /// check job for fitting in memory
   void check_job(bool get_node_count);
@@ -616,44 +616,44 @@ public:
 
   bool isFinalOuterIter_{false};
 
-  std::vector<stk::mesh::EntityId> hypreOffsets_;
+  std::vector<stk::mesh::EntityId> nalu_hypreOffsets_;
 
-  /** The starting index (global) of the HYPRE linear system in this MPI rank
+  /** The starting index (global) of the NALU_HYPRE linear system in this MPI rank
    *
    *  Note that this is actually the offset into the linear system. This index
    *  must be adjusted accordingly to account for multiple degrees of freedom on
    *  a particular node. This is performed in sierra::nalu::HypreLinearSystem.
    */
-  stk::mesh::EntityId hypreILower_;
+  stk::mesh::EntityId nalu_hypreILower_;
 
-  /** The ending index (global) of the HYPRE linear system in this MPI rank
+  /** The ending index (global) of the NALU_HYPRE linear system in this MPI rank
    *
    *  Note that this is actually the offset into the linear system. This index
    *  must be adjusted accordingly to account for multiple degrees of freedom on
    *  a particular node. This is performed in sierra::nalu::HypreLinearSystem.
    */
-  stk::mesh::EntityId hypreIUpper_;
+  stk::mesh::EntityId nalu_hypreIUpper_;
 
-  /** The total number of HYPRE nodes in the linear system
+  /** The total number of NALU_HYPRE nodes in the linear system
    *
    *  Note that this is not an MPI rank local quantity
    */
-  stk::mesh::EntityId hypreNumNodes_;
+  stk::mesh::EntityId nalu_hypreNumNodes_;
 
-  /** Global Row IDs for the HYPRE linear system
+  /** Global Row IDs for the NALU_HYPRE linear system
    *
-   *  The HYPRE IDs are different from STK IDs and Realm::naluGlobalId_ because
-   *  HYPRE expects contiguous IDs for matrix rows and further requires that the
+   *  The NALU_HYPRE IDs are different from STK IDs and Realm::naluGlobalId_ because
+   *  NALU_HYPRE expects contiguous IDs for matrix rows and further requires that the
    *  IDs be ordered across MPI ranks; i.e., startIdx (MPI_rank + 1) =
    *  endIdx(MPI_rank) + 1.
    */
-  HypreIDFieldType* hypreGlobalId_{nullptr};
+  HypreIDFieldType* nalu_hypreGlobalId_{nullptr};
   TpetIDFieldType* tpetGlobalId_{nullptr};
 
   /** Flag indicating whether Hypre solver is being used for any of the equation
    * systems.
    */
-  bool hypreIsActive_{false};
+  bool nalu_hypreIsActive_{false};
 
   std::vector<std::string>
   handle_all_element_part_alias(const std::vector<std::string>& names) const;

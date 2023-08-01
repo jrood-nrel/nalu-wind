@@ -1,4 +1,4 @@
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
 
 #include "HypreDirectSolver.h"
 #include "XSDKHypreInterface.h"
@@ -8,79 +8,79 @@ namespace sierra {
 namespace nalu {
 
 namespace {
-// This anonymous namespace contains wrapper methods to HYPRE solver creation
+// This anonymous namespace contains wrapper methods to NALU_HYPRE solver creation
 // methods. It hides around the fact that some solvers require an MPI
 // communicator while others do not. This allows HypreDirectSolver::CreateSolver
 // methods to assign pointers using the same function signature.
 //
 // Note that this section has been modeled after xSDK Trilinos package. See
-// <https://github.com/trilinos/xSDKTrilinos/blob/master/hypre/src/Ifpack2_Hypre.hpp>
+// <https://github.com/trilinos/xSDKTrilinos/blob/master/nalu_hypre/src/Ifpack2_Hypre.hpp>
 // for more details
 
 HypreIntType
-Hypre_BoomerAMGCreate(MPI_Comm, HYPRE_Solver* solver)
+Hypre_BoomerAMGCreate(MPI_Comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_BoomerAMGCreate(solver);
+  return NALU_HYPRE_BoomerAMGCreate(solver);
 }
 
 HypreIntType
-Hypre_ParaSailsCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParaSailsCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParaSailsCreate(comm, solver);
+  return NALU_HYPRE_ParaSailsCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_EuclidCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_EuclidCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_EuclidCreate(comm, solver);
+  return NALU_HYPRE_EuclidCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_AMSCreate(MPI_Comm, HYPRE_Solver* solver)
+Hypre_AMSCreate(MPI_Comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_AMSCreate(solver);
+  return NALU_HYPRE_AMSCreate(solver);
 }
 
 HypreIntType
-Hypre_ParCSRHybridCreate(MPI_Comm, HYPRE_Solver* solver)
+Hypre_ParCSRHybridCreate(MPI_Comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRHybridCreate(solver);
+  return NALU_HYPRE_ParCSRHybridCreate(solver);
 }
 
 HypreIntType
-Hypre_ParCSRPCGCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParCSRPCGCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRPCGCreate(comm, solver);
+  return NALU_HYPRE_ParCSRPCGCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_ParCSRGMRESCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParCSRGMRESCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRGMRESCreate(comm, solver);
+  return NALU_HYPRE_ParCSRGMRESCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_ParCSRCOGMRESCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParCSRCOGMRESCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRCOGMRESCreate(comm, solver);
+  return NALU_HYPRE_ParCSRCOGMRESCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_ParCSRFlexGMRESCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParCSRFlexGMRESCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRFlexGMRESCreate(comm, solver);
+  return NALU_HYPRE_ParCSRFlexGMRESCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_ParCSRLGMRESCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParCSRLGMRESCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRLGMRESCreate(comm, solver);
+  return NALU_HYPRE_ParCSRLGMRESCreate(comm, solver);
 }
 
 HypreIntType
-Hypre_ParCSRBiCGSTABCreate(MPI_Comm comm, HYPRE_Solver* solver)
+Hypre_ParCSRBiCGSTABCreate(MPI_Comm comm, NALU_HYPRE_Solver* solver)
 {
-  return HYPRE_ParCSRBiCGSTABCreate(comm, solver);
+  return NALU_HYPRE_ParCSRBiCGSTABCreate(comm, solver);
 }
 } // namespace
 
@@ -206,7 +206,7 @@ HypreDirectSolver::initSolver()
 void
 HypreDirectSolver::setupSolver()
 {
-  // We are always using HYPRE solver
+  // We are always using NALU_HYPRE solver
   solverSetupPtr_(solver_, parMat_, parRhs_, parSln_);
 }
 
@@ -223,102 +223,102 @@ HypreDirectSolver::createSolver()
   switch (solverType_) {
   case Hypre::BoomerAMG:
     solverCreatePtr_ = &Hypre_BoomerAMGCreate;
-    solverDestroyPtr_ = &HYPRE_BoomerAMGDestroy;
-    solverSetupPtr_ = &HYPRE_BoomerAMGSetup;
+    solverDestroyPtr_ = &NALU_HYPRE_BoomerAMGDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_BoomerAMGSetup;
     solverPrecondPtr_ = nullptr;
-    solverSolvePtr_ = &HYPRE_BoomerAMGSolve;
-    solverSetTolPtr_ = &HYPRE_BoomerAMGSetTol;
-    solverNumItersPtr_ = &HYPRE_BoomerAMGGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_BoomerAMGGetFinalRelativeResidualNorm;
+    solverSolvePtr_ = &NALU_HYPRE_BoomerAMGSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_BoomerAMGSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_BoomerAMGGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_BoomerAMGGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::GMRES:
     solverCreatePtr_ = &Hypre_ParCSRGMRESCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRGMRESDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRGMRESSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRGMRESSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRGMRESSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRGMRESSetTol;
-    solverNumItersPtr_ = &HYPRE_GMRESGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_GMRESGetFinalRelativeResidualNorm;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRGMRESDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRGMRESSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRGMRESSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRGMRESSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRGMRESSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_GMRESGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_GMRESGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::COGMRES:
     solverCreatePtr_ = &Hypre_ParCSRCOGMRESCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRCOGMRESDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRCOGMRESSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRCOGMRESSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRCOGMRESSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRCOGMRESSetTol;
-    solverNumItersPtr_ = &HYPRE_COGMRESGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_COGMRESGetFinalRelativeResidualNorm;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRCOGMRESDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRCOGMRESSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRCOGMRESSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRCOGMRESSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRCOGMRESSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_COGMRESGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_COGMRESGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::FlexGMRES:
     solverCreatePtr_ = &Hypre_ParCSRFlexGMRESCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRFlexGMRESDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRFlexGMRESSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRFlexGMRESSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRFlexGMRESSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRFlexGMRESSetTol;
-    solverNumItersPtr_ = &HYPRE_FlexGMRESGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_FlexGMRESGetFinalRelativeResidualNorm;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRFlexGMRESDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRFlexGMRESSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRFlexGMRESSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRFlexGMRESSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRFlexGMRESSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_FlexGMRESGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_FlexGMRESGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::LGMRES:
     solverCreatePtr_ = &Hypre_ParCSRLGMRESCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRLGMRESDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRLGMRESSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRLGMRESSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRLGMRESSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRLGMRESSetTol;
-    solverNumItersPtr_ = &HYPRE_LGMRESGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_LGMRESGetFinalRelativeResidualNorm;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRLGMRESDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRLGMRESSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRLGMRESSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRLGMRESSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRLGMRESSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_LGMRESGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_LGMRESGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::BiCGSTAB:
     solverCreatePtr_ = &Hypre_ParCSRBiCGSTABCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRBiCGSTABDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRBiCGSTABSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRBiCGSTABSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRBiCGSTABSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRBiCGSTABSetTol;
-    solverNumItersPtr_ = &HYPRE_BiCGSTABGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_BiCGSTABGetFinalRelativeResidualNorm;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRBiCGSTABDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRBiCGSTABSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRBiCGSTABSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRBiCGSTABSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRBiCGSTABSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_BiCGSTABGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_BiCGSTABGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::AMS:
     solverCreatePtr_ = &Hypre_AMSCreate;
-    solverDestroyPtr_ = &HYPRE_AMSDestroy;
-    solverSetupPtr_ = &HYPRE_AMSSetup;
+    solverDestroyPtr_ = &NALU_HYPRE_AMSDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_AMSSetup;
     solverPrecondPtr_ = nullptr;
-    solverSolvePtr_ = &HYPRE_AMSSolve;
-    solverSetTolPtr_ = &HYPRE_AMSSetTol;
-    solverNumItersPtr_ = &HYPRE_AMSGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_AMSGetFinalRelativeResidualNorm;
+    solverSolvePtr_ = &NALU_HYPRE_AMSSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_AMSSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_AMSGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_AMSGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::PCG:
     solverCreatePtr_ = &Hypre_ParCSRPCGCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRPCGDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRPCGSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRPCGSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRPCGSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRPCGSetTol;
-    solverNumItersPtr_ = &HYPRE_PCGGetNumIterations;
-    solverFinalResidualNormPtr_ = &HYPRE_PCGGetFinalRelativeResidualNorm;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRPCGDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRPCGSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRPCGSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRPCGSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRPCGSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_PCGGetNumIterations;
+    solverFinalResidualNormPtr_ = &NALU_HYPRE_PCGGetFinalRelativeResidualNorm;
     break;
 
   case Hypre::Hybrid:
     solverCreatePtr_ = &Hypre_ParCSRHybridCreate;
-    solverDestroyPtr_ = &HYPRE_ParCSRHybridDestroy;
-    solverSetupPtr_ = &HYPRE_ParCSRHybridSetup;
-    solverPrecondPtr_ = &HYPRE_ParCSRHybridSetPrecond;
-    solverSolvePtr_ = &HYPRE_ParCSRHybridSolve;
-    solverSetTolPtr_ = &HYPRE_ParCSRHybridSetTol;
-    solverNumItersPtr_ = &HYPRE_ParCSRHybridGetNumIterations;
+    solverDestroyPtr_ = &NALU_HYPRE_ParCSRHybridDestroy;
+    solverSetupPtr_ = &NALU_HYPRE_ParCSRHybridSetup;
+    solverPrecondPtr_ = &NALU_HYPRE_ParCSRHybridSetPrecond;
+    solverSolvePtr_ = &NALU_HYPRE_ParCSRHybridSolve;
+    solverSetTolPtr_ = &NALU_HYPRE_ParCSRHybridSetTol;
+    solverNumItersPtr_ = &NALU_HYPRE_ParCSRHybridGetNumIterations;
     solverFinalResidualNormPtr_ =
-      &HYPRE_ParCSRHybridGetFinalRelativeResidualNorm;
+      &NALU_HYPRE_ParCSRHybridGetFinalRelativeResidualNorm;
     break;
 
   default:
@@ -327,7 +327,7 @@ HypreDirectSolver::createSolver()
   }
 
   if (solverCreatePtr_ == nullptr)
-    throw std::runtime_error("Error initializing HYPRE Solver");
+    throw std::runtime_error("Error initializing NALU_HYPRE Solver");
 
   solverCreatePtr_(comm_, &solver_);
   isSolverSetup_ = true;
@@ -346,30 +346,30 @@ HypreDirectSolver::createPrecond()
   switch (precondType_) {
   case Hypre::BoomerAMG:
     precondCreatePtr_ = &Hypre_BoomerAMGCreate;
-    precondDestroyPtr_ = &HYPRE_BoomerAMGDestroy;
-    precondSetupPtr_ = &HYPRE_BoomerAMGSetup;
-    precondSolvePtr_ = &HYPRE_BoomerAMGSolve;
+    precondDestroyPtr_ = &NALU_HYPRE_BoomerAMGDestroy;
+    precondSetupPtr_ = &NALU_HYPRE_BoomerAMGSetup;
+    precondSolvePtr_ = &NALU_HYPRE_BoomerAMGSolve;
     break;
 
   case Hypre::Euclid:
     precondCreatePtr_ = &Hypre_EuclidCreate;
-    precondDestroyPtr_ = &HYPRE_EuclidDestroy;
-    precondSetupPtr_ = &HYPRE_EuclidSetup;
-    precondSolvePtr_ = &HYPRE_EuclidSolve;
+    precondDestroyPtr_ = &NALU_HYPRE_EuclidDestroy;
+    precondSetupPtr_ = &NALU_HYPRE_EuclidSetup;
+    precondSolvePtr_ = &NALU_HYPRE_EuclidSolve;
     break;
 
   case Hypre::ParaSails:
     precondCreatePtr_ = &Hypre_ParaSailsCreate;
-    precondDestroyPtr_ = &HYPRE_ParaSailsDestroy;
-    precondSetupPtr_ = &HYPRE_ParaSailsSetup;
-    precondSolvePtr_ = &HYPRE_ParaSailsSolve;
+    precondDestroyPtr_ = &NALU_HYPRE_ParaSailsDestroy;
+    precondSetupPtr_ = &NALU_HYPRE_ParaSailsSetup;
+    precondSolvePtr_ = &NALU_HYPRE_ParaSailsSolve;
     break;
 
   case Hypre::AMS:
     precondCreatePtr_ = &Hypre_AMSCreate;
-    precondDestroyPtr_ = &HYPRE_AMSDestroy;
-    precondSetupPtr_ = &HYPRE_AMSSetup;
-    precondSolvePtr_ = &HYPRE_AMSSolve;
+    precondDestroyPtr_ = &NALU_HYPRE_AMSDestroy;
+    precondSetupPtr_ = &NALU_HYPRE_AMSSetup;
+    precondSolvePtr_ = &NALU_HYPRE_AMSSolve;
     break;
 
   default:
@@ -378,7 +378,7 @@ HypreDirectSolver::createPrecond()
   }
 
   if (precondCreatePtr_ == nullptr)
-    throw std::runtime_error("Error initializing HYPRE Preconditioner");
+    throw std::runtime_error("Error initializing NALU_HYPRE Preconditioner");
 
   precondCreatePtr_(comm_, &precond_);
   isPrecondSetup_ = true;

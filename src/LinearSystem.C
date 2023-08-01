@@ -15,7 +15,7 @@
 #include <master_element/MasterElement.h>
 #include <NaluEnv.h>
 
-#ifdef NALU_USES_HYPRE
+#ifdef NALU_USES_NALU_HYPRE
 #include "HypreLinearSystem.h"
 #include "HypreUVWLinearSystem.h"
 #endif
@@ -138,13 +138,13 @@ LinearSystem::create(
 #endif
 #endif // NALU_USES_TRILINOS_SOLVERS
 
-#ifdef NALU_USES_HYPRE
-  case PT_HYPRE:
-    realm.hypreIsActive_ = true;
+#ifdef NALU_USES_NALU_HYPRE
+  case PT_NALU_HYPRE:
+    realm.nalu_hypreIsActive_ = true;
     return new HypreLinearSystem(realm, numDof, eqSys, solver);
 
-  case PT_HYPRE_SEGREGATED:
-    realm.hypreIsActive_ = true;
+  case PT_NALU_HYPRE_SEGREGATED:
+    realm.nalu_hypreIsActive_ = true;
     return new HypreUVWLinearSystem(realm, numDof, eqSys, solver);
 #endif
 

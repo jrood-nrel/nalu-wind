@@ -22,7 +22,7 @@ HypreUVWLinearSystem::HypreUVWLinearSystem(
     sln_(numDof, nullptr),
     nDim_(numDof)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   output_ = fopen(oname_, "at");
   fprintf(
     output_, "rank_=%d EqnName=%s : %s %s %d\n", rank_, name_.c_str(), __FILE__,
@@ -33,21 +33,21 @@ HypreUVWLinearSystem::HypreUVWLinearSystem(
 
 HypreUVWLinearSystem::~HypreUVWLinearSystem()
 {
-  if (hypreMatrixVectorsCreated_) {
-    HYPRE_IJMatrixDestroy(mat_);
+  if (nalu_hypreMatrixVectorsCreated_) {
+    NALU_HYPRE_IJMatrixDestroy(mat_);
 
     for (unsigned i = 0; i < nDim_; ++i) {
-      HYPRE_IJVectorDestroy(rhs_[i]);
-      HYPRE_IJVectorDestroy(sln_[i]);
+      NALU_HYPRE_IJVectorDestroy(rhs_[i]);
+      NALU_HYPRE_IJVectorDestroy(sln_[i]);
     }
   }
-  hypreMatrixVectorsCreated_ = false;
+  nalu_hypreMatrixVectorsCreated_ = false;
 }
 
 void
 HypreUVWLinearSystem::finalizeLinearSystem()
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -55,7 +55,7 @@ HypreUVWLinearSystem::finalizeLinearSystem()
   ThrowRequire(inConstruction_);
   inConstruction_ = false;
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   size_t used1 = 0, free1 = 0;
   stk::get_gpu_memory_info(used1, free1);
 #endif
@@ -74,7 +74,7 @@ HypreUVWLinearSystem::finalizeLinearSystem()
   hcApplier->ngpMesh_ = realm_.ngp_mesh();
   hcApplier->ngpHypreGlobalId_ =
     realm_.ngp_field_manager().get_field<HypreIntType>(
-      realm_.hypreGlobalId_->mesh_meta_data_ordinal());
+      realm_.nalu_hypreGlobalId_->mesh_meta_data_ordinal());
 
   /* create these mappings */
   buildCoeffApplierPeriodicNodeToHIDMapping();
@@ -86,7 +86,7 @@ HypreUVWLinearSystem::finalizeLinearSystem()
    * all ranks */
   computeRowSizes();
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   size_t used2 = 0, free2 = 0;
   stk::get_gpu_memory_info(used2, free2);
   size_t total = used2 + free2;
@@ -100,7 +100,7 @@ HypreUVWLinearSystem::finalizeLinearSystem()
   fclose(output_);
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -109,7 +109,7 @@ HypreUVWLinearSystem::finalizeLinearSystem()
 }
 
 void
-HypreUVWLinearSystem::hypreIJVectorSetAddToValues()
+HypreUVWLinearSystem::nalu_hypreIJVectorSetAddToValues()
 {
   HypreUVWLinSysCoeffApplier* hcApplier =
     dynamic_cast<HypreUVWLinSysCoeffApplier*>(hostCoeffApplier.get());
@@ -125,10 +125,10 @@ HypreUVWLinearSystem::hypreIJVectorSetAddToValues()
   for (unsigned i = 0; i < nDim_; ++i) {
     if (config->simpleHypreMatrixAssemble()) {
 #if 0
-      /* set the key hypre parameters */
-      HYPRE_IJVectorSetMaxOnProcElmts(rhs_[i], num_rows_owned);
-      HYPRE_IJVectorSetOffProcSendElmts(rhs_[i], offProcRhsToSend_);
-      HYPRE_IJVectorSetOffProcRecvElmts(rhs_[i], offProcRhsToRecv_);
+      /* set the key nalu_hypre parameters */
+      NALU_HYPRE_IJVectorSetMaxOnProcElmts(rhs_[i], num_rows_owned);
+      NALU_HYPRE_IJVectorSetOffProcSendElmts(rhs_[i], offProcRhsToSend_);
+      NALU_HYPRE_IJVectorSetOffProcRecvElmts(rhs_[i], offProcRhsToRecv_);
 #endif
     }
 
@@ -174,11 +174,11 @@ HypreUVWLinearSystem::hypreIJVectorSetAddToValues()
 
     if (num_rows_owned) {
       /* Set the owned part */
-      HYPRE_IJVectorSetValues(
+      NALU_HYPRE_IJVectorSetValues(
         rhs_[i], num_rows_owned,
         rhs_rows_dev_.data() + i * rhs_rows_dev_.extent(0),
         hcApplier->rhs_dev_.data() + i * rhs_rows_dev_.extent(0));
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
       double* ptr = hcApplier->rhs_dev_.data() + i * rhs_rows_dev_.extent(0);
       scanBufferForBadValues(
         ptr, num_rows_owned, __FILE__, __FUNCTION__, __LINE__, "Owned RHS");
@@ -187,12 +187,12 @@ HypreUVWLinearSystem::hypreIJVectorSetAddToValues()
 
     if (num_rows_shared) {
       /* Add the shared part */
-      HYPRE_IJVectorAddToValues(
+      NALU_HYPRE_IJVectorAddToValues(
         rhs_[i], num_rows_shared,
         rhs_rows_dev_.data() + i * rhs_rows_dev_.extent(0) + num_rows_owned,
         hcApplier->rhs_dev_.data() + i * rhs_rows_dev_.extent(0) +
           num_rows_owned);
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
       double* ptr = hcApplier->rhs_dev_.data() + i * rhs_rows_dev_.extent(0) +
                     num_rows_owned;
       scanBufferForBadValues(
@@ -211,32 +211,32 @@ HypreUVWLinearSystem::loadComplete()
   /* finish assembly for the coupled overset case */
   finishCoupledOversetAssembly();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
 
   /* Matrix */
-  hypreIJMatrixSetAddToValues();
+  nalu_hypreIJMatrixSetAddToValues();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the stop time */
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreMatAssemblyTimer_.push_back(msec);
+  nalu_hypreMatAssemblyTimer_.push_back(msec);
   gettimeofday(&_start, NULL);
 #endif
 
   /* Rhs */
-  hypreIJVectorSetAddToValues();
+  nalu_hypreIJVectorSetAddToValues();
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the stop time */
   gettimeofday(&_stop, NULL);
   msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
          1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreRhsAssemblyTimer_.push_back(msec);
+  nalu_hypreRhsAssemblyTimer_.push_back(msec);
 #endif
 
   /* Reset after assembly */
@@ -249,27 +249,27 @@ HypreUVWLinearSystem::loadComplete()
 void
 HypreUVWLinearSystem::loadCompleteSolver()
 {
-  // Now perform HYPRE assembly so that the data structures are ready to be used
+  // Now perform NALU_HYPRE assembly so that the data structures are ready to be used
   // by the solvers/preconditioners.
   HypreUVWSolver* solver = reinterpret_cast<HypreUVWSolver*>(linearSolver_);
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
 
-  HYPRE_IJMatrixAssemble(mat_);
-  HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
+  NALU_HYPRE_IJMatrixAssemble(mat_);
+  NALU_HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
-  hypre_CSRMatrix* diag =
-    hypre_ParCSRMatrixDiag((hypre_ParCSRMatrix*)hypre_IJMatrixObject(mat_));
-  hypre_CSRMatrix* offd =
-    hypre_ParCSRMatrixOffd((hypre_ParCSRMatrix*)hypre_IJMatrixObject(mat_));
-  HYPRE_Int nnz_diag = hypre_CSRMatrixNumNonzeros(diag);
-  HYPRE_Int nnz_offd = hypre_CSRMatrixNumNonzeros(offd);
-  double* ptr_diag = hypre_CSRMatrixData(diag);
-  double* ptr_offd = hypre_CSRMatrixData(offd);
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
+  nalu_hypre_CSRMatrix* diag =
+    nalu_hypre_ParCSRMatrixDiag((nalu_hypre_ParCSRMatrix*)nalu_hypre_IJMatrixObject(mat_));
+  nalu_hypre_CSRMatrix* offd =
+    nalu_hypre_ParCSRMatrixOffd((nalu_hypre_ParCSRMatrix*)nalu_hypre_IJMatrixObject(mat_));
+  NALU_HYPRE_Int nnz_diag = nalu_hypre_CSRMatrixNumNonzeros(diag);
+  NALU_HYPRE_Int nnz_offd = nalu_hypre_CSRMatrixNumNonzeros(offd);
+  double* ptr_diag = nalu_hypre_CSRMatrixData(diag);
+  double* ptr_offd = nalu_hypre_CSRMatrixData(offd);
   scanBufferForBadValues(
     ptr_diag, nnz_diag, __FILE__, __FUNCTION__, __LINE__, "Diag Matrix");
   scanBufferForBadValues(
@@ -278,31 +278,31 @@ HypreUVWLinearSystem::loadCompleteSolver()
   fprintf(
     output_,
     "rank=%d : diag num_rows=%d, num_cols=%d, offd num_rows=%d, num_cols=%d\n",
-    rank_, hypre_CSRMatrixNumRows(diag), hypre_CSRMatrixNumCols(diag),
-    hypre_CSRMatrixNumRows(offd), hypre_CSRMatrixNumCols(offd));
+    rank_, nalu_hypre_CSRMatrixNumRows(diag), nalu_hypre_CSRMatrixNumCols(diag),
+    nalu_hypre_CSRMatrixNumRows(offd), nalu_hypre_CSRMatrixNumCols(offd));
   fclose(output_);
 #endif
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreMatAssemblyTimer_.back() += msec;
+  nalu_hypreMatAssemblyTimer_.back() += msec;
   gettimeofday(&_start, NULL);
 #endif
 
   for (unsigned i = 0; i < nDim_; ++i) {
-    HYPRE_IJVectorAssemble(rhs_[i]);
-    HYPRE_IJVectorGetObject(rhs_[i], (void**)&(solver->parRhsU_[i]));
+    NALU_HYPRE_IJVectorAssemble(rhs_[i]);
+    NALU_HYPRE_IJVectorGetObject(rhs_[i], (void**)&(solver->parRhsU_[i]));
 
-    HYPRE_IJVectorAssemble(sln_[i]);
-    HYPRE_IJVectorGetObject(sln_[i], (void**)&(solver->parSlnU_[i]));
+    NALU_HYPRE_IJVectorAssemble(sln_[i]);
+    NALU_HYPRE_IJVectorGetObject(sln_[i], (void**)&(solver->parSlnU_[i]));
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
-    double* rhs_data = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(rhs_[i])));
-    double* sln_data = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[i])));
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
+    double* rhs_data = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_[i])));
+    double* sln_data = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[i])));
     scanBufferForBadValues(
       rhs_data, numRows_, __FILE__, __FUNCTION__, __LINE__, "RHS");
     scanBufferForBadValues(
@@ -310,11 +310,11 @@ HypreUVWLinearSystem::loadCompleteSolver()
 #endif
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
          1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
-  hypreRhsAssemblyTimer_.back() += msec;
+  nalu_hypreRhsAssemblyTimer_.back() += msec;
 #endif
 
   solver->comm_ = realm_.bulk_data().parallel();
@@ -334,8 +334,8 @@ HypreUVWLinearSystem::zeroSystem()
 
   MPI_Comm comm = realm_.bulk_data().parallel();
 
-  if (hypreMatrixVectorsCreated_) {
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+  if (nalu_hypreMatrixVectorsCreated_) {
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
     snprintf(oname_, 50, "debug_out_%d.txt", rank_);
     output_ = fopen(oname_, "wt");
     fprintf(
@@ -343,34 +343,34 @@ HypreUVWLinearSystem::zeroSystem()
       __FILE__, __FUNCTION__, __LINE__);
     fclose(output_);
 #endif
-    HYPRE_IJMatrixDestroy(mat_);
+    NALU_HYPRE_IJMatrixDestroy(mat_);
     for (unsigned i = 0; i < nDim_; ++i) {
-      HYPRE_IJVectorDestroy(rhs_[i]);
-      HYPRE_IJVectorDestroy(sln_[i]);
+      NALU_HYPRE_IJVectorDestroy(rhs_[i]);
+      NALU_HYPRE_IJVectorDestroy(sln_[i]);
     }
-    hypreMatrixVectorsCreated_ = false;
+    nalu_hypreMatrixVectorsCreated_ = false;
   }
 
-  HYPRE_IJMatrixCreate(comm, iLower_, iUpper_, jLower_, jUpper_, &mat_);
-  HYPRE_IJMatrixSetObjectType(mat_, HYPRE_PARCSR);
-  HYPRE_IJMatrixInitialize(mat_);
-  HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
-  HYPRE_IJMatrixSetConstantValues(mat_, 0.0);
+  NALU_HYPRE_IJMatrixCreate(comm, iLower_, iUpper_, jLower_, jUpper_, &mat_);
+  NALU_HYPRE_IJMatrixSetObjectType(mat_, NALU_HYPRE_PARCSR);
+  NALU_HYPRE_IJMatrixInitialize(mat_);
+  NALU_HYPRE_IJMatrixGetObject(mat_, (void**)&(solver->parMat_));
+  NALU_HYPRE_IJMatrixSetConstantValues(mat_, 0.0);
 
   for (unsigned i = 0; i < nDim_; ++i) {
-    HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &rhs_[i]);
-    HYPRE_IJVectorSetObjectType(rhs_[i], HYPRE_PARCSR);
-    HYPRE_IJVectorInitialize(rhs_[i]);
-    HYPRE_IJVectorGetObject(rhs_[i], (void**)&(solver->parRhsU_[i]));
-    HYPRE_ParVectorSetConstantValues((solver->parRhsU_[i]), 0.0);
+    NALU_HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &rhs_[i]);
+    NALU_HYPRE_IJVectorSetObjectType(rhs_[i], NALU_HYPRE_PARCSR);
+    NALU_HYPRE_IJVectorInitialize(rhs_[i]);
+    NALU_HYPRE_IJVectorGetObject(rhs_[i], (void**)&(solver->parRhsU_[i]));
+    NALU_HYPRE_ParVectorSetConstantValues((solver->parRhsU_[i]), 0.0);
 
-    HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &sln_[i]);
-    HYPRE_IJVectorSetObjectType(sln_[i], HYPRE_PARCSR);
-    HYPRE_IJVectorInitialize(sln_[i]);
-    HYPRE_IJVectorGetObject(sln_[i], (void**)&(solver->parSlnU_[i]));
-    HYPRE_ParVectorSetConstantValues((solver->parSlnU_[i]), 0.0);
+    NALU_HYPRE_IJVectorCreate(comm, iLower_, iUpper_, &sln_[i]);
+    NALU_HYPRE_IJVectorSetObjectType(sln_[i], NALU_HYPRE_PARCSR);
+    NALU_HYPRE_IJVectorInitialize(sln_[i]);
+    NALU_HYPRE_IJVectorGetObject(sln_[i], (void**)&(solver->parSlnU_[i]));
+    NALU_HYPRE_ParVectorSetConstantValues((solver->parSlnU_[i]), 0.0);
   }
-  hypreMatrixVectorsCreated_ = true;
+  nalu_hypreMatrixVectorsCreated_ = true;
 }
 
 void
@@ -403,7 +403,7 @@ HypreUVWLinearSystem::applyDirichletBCs(
 
   /* data from hcApplier */
   const auto& ngpMesh = realm_.ngp_mesh();
-  const auto hypreGID = hcApplier->ngpHypreGlobalId_;
+  const auto nalu_hypreGID = hcApplier->ngpHypreGlobalId_;
   auto mat_row_start_owned = hcApplier->mat_row_start_owned_;
   auto vals = hcApplier->values_dev_;
   auto rhs_vals = hcApplier->rhs_dev_;
@@ -416,7 +416,7 @@ HypreUVWLinearSystem::applyDirichletBCs(
     stk::topology::NODE_RANK, selector,
     KOKKOS_LAMBDA(const Traits::MeshIndex& mi) {
       const auto node = (*mi.bucket)[mi.bucketOrd];
-      HypreIntType hid = hypreGID.get(ngpMesh, node, 0);
+      HypreIntType hid = nalu_hypreGID.get(ngpMesh, node, 0);
       unsigned matIndex = mat_row_start_owned(hid - iLower);
       vals(matIndex) = 1.0;
       for (unsigned d = 0; d < nDim; ++d) {
@@ -434,12 +434,12 @@ HypreUVWLinearSystem::solve(stk::mesh::FieldBase* slnField)
   if (solver->getConfig()->getWriteMatrixFiles()) {
     std::string writeCounter = std::to_string(eqSys_->linsysWriteCounter_);
     const std::string matFile = eqSysName_ + ".IJM." + writeCounter + ".mat";
-    HYPRE_IJMatrixPrint(mat_, matFile.c_str());
+    NALU_HYPRE_IJMatrixPrint(mat_, matFile.c_str());
 
     for (unsigned d = 0; d < nDim_; ++d) {
       const std::string rhsFile =
         eqSysName_ + std::to_string(d) + ".IJV." + writeCounter + ".rhs";
-      HYPRE_IJVectorPrint(rhs_[d], rhsFile.c_str());
+      NALU_HYPRE_IJVectorPrint(rhs_[d], rhsFile.c_str());
     }
   }
 
@@ -448,7 +448,7 @@ HypreUVWLinearSystem::solve(stk::mesh::FieldBase* slnField)
   std::vector<double> finalNorm(nDim_, 1.0);
   std::vector<double> rhsNorm(nDim_, std::numeric_limits<double>::max());
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   output_ = fopen(oname_, "at");
   fprintf(
     output_, "%s %s %d %s : rank=%d\n", __FILE__, __FUNCTION__, __LINE__,
@@ -459,14 +459,14 @@ HypreUVWLinearSystem::solve(stk::mesh::FieldBase* slnField)
     status = solver->solve(d, iters[d], finalNorm[d], realm_.isFinalOuterIter_);
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   output_ = fopen(oname_, "at");
   fprintf(
     output_, "%s %s %d %s : rank=%d\n", __FILE__, __FUNCTION__, __LINE__,
     eqSysName_.c_str(), rank_);
 #endif
 
-  copy_hypre_to_stk(slnField, rhsNorm);
+  copy_nalu_hypre_to_stk(slnField, rhsNorm);
   sync_field(slnField);
 
   /* set this after the solve calls */
@@ -477,7 +477,7 @@ HypreUVWLinearSystem::solve(stk::mesh::FieldBase* slnField)
       std::string writeCounter = std::to_string(eqSys_->linsysWriteCounter_);
       const std::string slnFile =
         eqSysName_ + std::to_string(d) + ".IJV." + writeCounter + ".sln";
-      HYPRE_IJVectorPrint(sln_[d], slnFile.c_str());
+      NALU_HYPRE_IJVectorPrint(sln_[d], slnFile.c_str());
     }
   }
 
@@ -542,7 +542,7 @@ HypreUVWLinearSystem::solve(stk::mesh::FieldBase* slnField)
 }
 
 void
-HypreUVWLinearSystem::copy_hypre_to_stk(
+HypreUVWLinearSystem::copy_nalu_hypre_to_stk(
   stk::mesh::FieldBase* stkField, std::vector<double>& rhsNorm)
 {
   auto& meta = realm_.meta_data();
@@ -559,7 +559,7 @@ HypreUVWLinearSystem::copy_hypre_to_stk(
     stkField->mesh_meta_data_ordinal());
   auto ngpHypreGlobalId = hcApplier->ngpHypreGlobalId_;
   const auto& ngpMesh = hcApplier->ngpMesh_;
-  const auto periodic_node_to_hypre_id = hcApplier->periodic_node_to_hypre_id_;
+  const auto periodic_node_to_nalu_hypre_id = hcApplier->periodic_node_to_nalu_hypre_id_;
 
   auto iLower = iLower_;
   auto iUpper = iUpper_;
@@ -569,22 +569,22 @@ HypreUVWLinearSystem::copy_hypre_to_stk(
   /* Move solution to stk field */
 
   if (nDim == 2) {
-    /* use internal hypre APIs to get directly at the pointer to the owned SLN
+    /* use internal nalu_hypre APIs to get directly at the pointer to the owned SLN
      * vector */
-    double* sln_data0 = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[0])));
-    double* sln_data1 = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[1])));
+    double* sln_data0 = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[0])));
+    double* sln_data1 = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[1])));
 
     nalu_ngp::run_entity_algorithm(
-      "HypreUVWLinearSystem::copy_hypre_to_stk_3D", ngpMesh,
+      "HypreUVWLinearSystem::copy_nalu_hypre_to_stk_3D", ngpMesh,
       stk::topology::NODE_RANK, selector,
       KOKKOS_LAMBDA(const Traits::MeshIndex& mi) {
         const auto node = (*mi.bucket)[mi.bucketOrd];
         HypreIntType hid;
-        if (periodic_node_to_hypre_id.exists(node.local_offset()))
-          hid = periodic_node_to_hypre_id.value_at(
-            periodic_node_to_hypre_id.find(node.local_offset()));
+        if (periodic_node_to_nalu_hypre_id.exists(node.local_offset()))
+          hid = periodic_node_to_nalu_hypre_id.value_at(
+            periodic_node_to_nalu_hypre_id.find(node.local_offset()));
         else
           hid = ngpHypreGlobalId.get(ngpMesh, node, 0);
 
@@ -594,24 +594,24 @@ HypreUVWLinearSystem::copy_hypre_to_stk(
         }
       });
   } else {
-    /* use internal hypre APIs to get directly at the pointer to the owned SLN
+    /* use internal nalu_hypre APIs to get directly at the pointer to the owned SLN
      * vector */
-    double* sln_data0 = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[0])));
-    double* sln_data1 = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[1])));
-    double* sln_data2 = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[2])));
+    double* sln_data0 = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[0])));
+    double* sln_data1 = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[1])));
+    double* sln_data2 = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[2])));
 
     nalu_ngp::run_entity_algorithm(
-      "HypreUVWLinearSystem::copy_hypre_to_stk_3D", ngpMesh,
+      "HypreUVWLinearSystem::copy_nalu_hypre_to_stk_3D", ngpMesh,
       stk::topology::NODE_RANK, selector,
       KOKKOS_LAMBDA(const Traits::MeshIndex& mi) {
         const auto node = (*mi.bucket)[mi.bucketOrd];
         HypreIntType hid;
-        if (periodic_node_to_hypre_id.exists(node.local_offset()))
-          hid = periodic_node_to_hypre_id.value_at(
-            periodic_node_to_hypre_id.find(node.local_offset()));
+        if (periodic_node_to_nalu_hypre_id.exists(node.local_offset()))
+          hid = periodic_node_to_nalu_hypre_id.value_at(
+            periodic_node_to_nalu_hypre_id.find(node.local_offset()));
         else
           hid = ngpHypreGlobalId.get(ngpMesh, node, 0);
 
@@ -631,14 +631,14 @@ HypreUVWLinearSystem::copy_hypre_to_stk(
 #if 1
   /* Use Hypre internal APIs */
   for (unsigned d = 0; d < nDim; ++d)
-    rhsNorm[d] = hypre_ParVectorInnerProd(
-      (hypre_ParVector*)hypre_IJVectorObject(rhs_[d]),
-      (hypre_ParVector*)hypre_IJVectorObject(rhs_[d]));
+    rhsNorm[d] = nalu_hypre_ParVectorInnerProd(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_[d]),
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_[d]));
 #else
 
   for (unsigned d = 0; d < nDim; ++d) {
-    double* rhs_data = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(rhs_[d])));
+    double* rhs_data = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_[d])));
     Kokkos::parallel_reduce(
       "HypreUVWLinearSystem::Reduction", DeviceRangePolicy(0, N),
       KOKKOS_LAMBDA(const int i, double& update) {
@@ -654,12 +654,12 @@ HypreUVWLinearSystem::copy_hypre_to_stk(
   for (unsigned i = 0; i < nDim; ++i)
     rhsNorm[i] = std::sqrt(rhsNorm[i]);
 
-#ifdef HYPRE_LINEAR_SYSTEM_DEBUG
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_DEBUG
   for (unsigned d = 0; d < nDim; ++d) {
-    double* rhs_data = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(rhs_[d])));
-    double* sln_data = hypre_VectorData(hypre_ParVectorLocalVector(
-      (hypre_ParVector*)hypre_IJVectorObject(sln_[d])));
+    double* rhs_data = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(rhs_[d])));
+    double* sln_data = nalu_hypre_VectorData(nalu_hypre_ParVectorLocalVector(
+      (nalu_hypre_ParVector*)nalu_hypre_IJVectorObject(sln_[d])));
 
     scanBufferForBadValues(
       rhs_data, numRows_, __FILE__, __FUNCTION__, __LINE__, "RHS");
@@ -707,9 +707,9 @@ HypreUVWLinearSystem::HypreUVWLinSysCoeffApplier::sum_into(
 
   for (unsigned i = 0; i < numEntities; ++i) {
     auto node = entities[i];
-    if (periodic_node_to_hypre_id_.exists(node.local_offset()))
-      localIds[i] = periodic_node_to_hypre_id_.value_at(
-        periodic_node_to_hypre_id_.find(node.local_offset()));
+    if (periodic_node_to_nalu_hypre_id_.exists(node.local_offset()))
+      localIds[i] = periodic_node_to_nalu_hypre_id_.value_at(
+        periodic_node_to_nalu_hypre_id_.find(node.local_offset()));
     else
       localIds[i] = ngpHypreGlobalId_.get(ngpMesh_, node, 0);
     sortPermutation[i] = i * nDim;
@@ -797,9 +797,9 @@ HypreUVWLinearSystem::HypreUVWLinSysCoeffApplier::reset_rows(
   for (unsigned i = 0; i < numNodes; ++i) {
     auto node = nodeList[i];
     HypreIntType hid;
-    if (periodic_node_to_hypre_id_.exists(node.local_offset()))
-      hid = periodic_node_to_hypre_id_.value_at(
-        periodic_node_to_hypre_id_.find(node.local_offset()));
+    if (periodic_node_to_nalu_hypre_id_.exists(node.local_offset()))
+      hid = periodic_node_to_nalu_hypre_id_.value_at(
+        periodic_node_to_nalu_hypre_id_.find(node.local_offset()));
     else
       hid = ngpHypreGlobalId_.get(ngpMesh_, node, 0);
 
@@ -884,7 +884,7 @@ HypreUVWLinearSystem::HypreUVWLinSysCoeffApplier::device_pointer()
 void
 HypreUVWLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -906,14 +906,14 @@ HypreUVWLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
     for (stk::mesh::Bucket::size_type k = 0; k < b.size(); ++k) {
 
       stk::mesh::Entity node = b[k];
-      hids[0] = get_entity_hypre_id(node);
+      hids[0] = get_entity_nalu_hypre_id(node);
 
       /* fill owned/shared 1 Dof */
       fill_owned_shared_data_structures_1DoF(1, hids);
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -924,7 +924,7 @@ HypreUVWLinearSystem::buildNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreUVWLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -950,16 +950,16 @@ HypreUVWLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
 
       stk::mesh::Entity const* nodes = b.begin_nodes(k);
 
-      /* save the hypre ids */
+      /* save the nalu_hypre ids */
       for (unsigned i = 0; i < numNodes; ++i)
-        hids[i] = get_entity_hypre_id(nodes[i]);
+        hids[i] = get_entity_nalu_hypre_id(nodes[i]);
 
       /* fill owned/shared 1 Dof */
       fill_owned_shared_data_structures_1DoF(numNodes, hids);
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -970,7 +970,7 @@ HypreUVWLinearSystem::buildFaceToNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreUVWLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -997,16 +997,16 @@ HypreUVWLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
 
       stk::mesh::Entity const* nodes = b.begin_nodes(k);
 
-      /* save the hypre ids */
+      /* save the nalu_hypre ids */
       for (unsigned i = 0; i < numNodes; ++i)
-        hids[i] = get_entity_hypre_id(nodes[i]);
+        hids[i] = get_entity_nalu_hypre_id(nodes[i]);
 
       /* fill owned/shared 1 Dof */
       fill_owned_shared_data_structures_1DoF(numNodes, hids);
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -1017,7 +1017,7 @@ HypreUVWLinearSystem::buildEdgeToNodeGraph(const stk::mesh::PartVector& parts)
 void
 HypreUVWLinearSystem::buildElemToNodeGraph(const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -1043,16 +1043,16 @@ HypreUVWLinearSystem::buildElemToNodeGraph(const stk::mesh::PartVector& parts)
 
       stk::mesh::Entity const* nodes = b.begin_nodes(k);
 
-      /* save the hypre ids */
+      /* save the nalu_hypre ids */
       for (unsigned i = 0; i < numNodes; ++i)
-        hids[i] = get_entity_hypre_id(nodes[i]);
+        hids[i] = get_entity_nalu_hypre_id(nodes[i]);
 
       /* fill owned/shared 1 Dof */
       fill_owned_shared_data_structures_1DoF(numNodes, hids);
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -1064,7 +1064,7 @@ void
 HypreUVWLinearSystem::buildFaceElemToNodeGraph(
   const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -1099,16 +1099,16 @@ HypreUVWLinearSystem::buildFaceElemToNodeGraph(
       const unsigned numNodes = (unsigned)bulkData.num_nodes(element);
       hids.resize(numNodes);
 
-      /* save the hypre ids */
+      /* save the nalu_hypre ids */
       for (unsigned i = 0; i < numNodes; ++i)
-        hids[i] = get_entity_hypre_id(elem_nodes[i]);
+        hids[i] = get_entity_nalu_hypre_id(elem_nodes[i]);
 
       /* fill owned/shared 1 Dof */
       fill_owned_shared_data_structures_1DoF(numNodes, hids);
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -1132,7 +1132,7 @@ void
 HypreUVWLinearSystem::buildDirichletNodeGraph(
   const stk::mesh::PartVector& parts)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -1146,7 +1146,7 @@ HypreUVWLinearSystem::buildDirichletNodeGraph(
   for (auto b : bkts) {
     for (size_t in = 0; in < b->size(); in++) {
       auto node = (*b)[in];
-      HypreIntType hid = *stk::mesh::field_data(*realm_.hypreGlobalId_, node);
+      HypreIntType hid = *stk::mesh::field_data(*realm_.nalu_hypreGlobalId_, node);
       skippedRows_.insert(hid);
       if (hid >= iLower_ && hid <= iUpper_) {
         HypreIntType lid = hid - iLower_;
@@ -1156,7 +1156,7 @@ HypreUVWLinearSystem::buildDirichletNodeGraph(
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -1168,7 +1168,7 @@ void
 HypreUVWLinearSystem::buildDirichletNodeGraph(
   const std::vector<stk::mesh::Entity>& nodeList)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -1176,7 +1176,7 @@ HypreUVWLinearSystem::buildDirichletNodeGraph(
   beginLinearSystemConstruction();
 
   for (const auto& node : nodeList) {
-    HypreIntType hid = get_entity_hypre_id(node);
+    HypreIntType hid = get_entity_nalu_hypre_id(node);
     skippedRows_.insert(hid);
     if (hid >= iLower_ && hid <= iUpper_) {
       HypreIntType lid = hid - iLower_;
@@ -1185,7 +1185,7 @@ HypreUVWLinearSystem::buildDirichletNodeGraph(
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
@@ -1197,7 +1197,7 @@ void
 HypreUVWLinearSystem::buildDirichletNodeGraph(
   const stk::mesh::NgpMesh::ConnectedNodes nodeList)
 {
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   /* record the start time */
   gettimeofday(&_start, NULL);
 #endif
@@ -1205,7 +1205,7 @@ HypreUVWLinearSystem::buildDirichletNodeGraph(
   beginLinearSystemConstruction();
 
   for (unsigned i = 0; i < nodeList.size(); ++i) {
-    HypreIntType hid = get_entity_hypre_id(nodeList[i]);
+    HypreIntType hid = get_entity_nalu_hypre_id(nodeList[i]);
     skippedRows_.insert(hid);
     if (hid >= iLower_ && hid <= iUpper_) {
       HypreIntType lid = hid - iLower_;
@@ -1214,7 +1214,7 @@ HypreUVWLinearSystem::buildDirichletNodeGraph(
     }
   }
 
-#ifdef HYPRE_LINEAR_SYSTEM_TIMER
+#ifdef NALU_HYPRE_LINEAR_SYSTEM_TIMER
   gettimeofday(&_stop, NULL);
   double msec = (double)(_stop.tv_usec - _start.tv_usec) / 1.e3 +
                 1.e3 * ((double)(_stop.tv_sec - _start.tv_sec));
