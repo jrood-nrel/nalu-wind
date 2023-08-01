@@ -25,7 +25,7 @@
 #include "NaluParsing.h"
 #include <yaml-cpp/yaml.h>
 
-namespace nalu_nalu_hypre {
+namespace nalu_hypre {
 
 #ifdef NALU_HYPRE_USING_GPU
 
@@ -149,6 +149,6 @@ nalu_hypre_finalize()
 }
 
 #endif
-} // namespace nalu_nalu_hypre
+} // namespace nalu_hypre
 
 #endif /* NALU_HYPRENGP_H */
