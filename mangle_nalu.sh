@@ -18,13 +18,13 @@ git clean -df
 find . -type f -exec sed -i.bak 's/libHYPRE/libNALU_HYPRE/g' {} \;
 find . -name \*.bak | xargs rm
 git clean -df
-find . -type f -exec sed -i.bak 's/nalu_hypre_initialize/hypre_initialize/g' {} \;
-find . -name \*.bak | xargs rm
-git clean -df
-find . -type f -exec sed -i.bak 's/nalu_hypre_set_params/hypre_set_params/g' {} \;
-find . -name \*.bak | xargs rm
-git clean -df
-find . -type f -exec sed -i.bak 's/nalu_hypre_finalize/hypre_finalize/g' {} \;
-find . -name \*.bak | xargs rm
-git clean -df
+#find . -type f -exec sed -i.bak 's/nalu_hypre_initialize/hypre_initialize/g' {} \;
+#find . -name \*.bak | xargs rm
+#git clean -df
+#find . -type f -exec sed -i.bak 's/nalu_hypre_set_params/hypre_set_params/g' {} \;
+#find . -name \*.bak | xargs rm
+#git clean -df
+#find . -type f -exec sed -i.bak 's/nalu_hypre_finalize/hypre_finalize/g' {} \;
+#find . -name \*.bak | xargs rm
+#git clean -df
 git mv cmake/FindHYPRE.cmake cmake/FindNALU_HYPRE.cmake

@@ -83,7 +83,7 @@ main(int argc, char** argv)
   Kokkos::initialize(argc, argv);
 
   // Hypre initialization
-  nalu_hypre::hypre_initialize();
+  nalu_hypre::nalu_hypre_initialize();
 
   {
 
@@ -289,7 +289,7 @@ main(int argc, char** argv)
   }
 
   // Hypre cleanup
-  nalu_hypre::hypre_finalize();
+  nalu_hypre::nalu_hypre_finalize();
 
   Kokkos::finalize();
 
