@@ -178,7 +178,7 @@ main(int argc, char** argv)
     }
 
     // Hypre general parameter setting
-    nalu_hypre::hypre_set_params(doc);
+    nalu_hypre::nalu_hypre_set_params(doc);
 
     sierra::nalu::Simulation sim(doc);
     if (serializedIOGroupSize) {
