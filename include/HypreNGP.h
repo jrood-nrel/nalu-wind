@@ -121,7 +121,7 @@ hypre_set_params()
 }
 
 inline void
-hypre_finalize()
+nalu_hypre_finalize()
 {
   NALU_HYPRE_Finalize();
 }
@@ -129,22 +129,22 @@ hypre_finalize()
 #else
 
 inline void
-hypre_initialize()
+nalu_hypre_initialize()
 {
 }
 
 inline void
-hypre_set_params(YAML::Node nodes)
+nalu_hypre_set_params(YAML::Node nodes)
 {
 }
 
 inline void
-hypre_set_params()
+nalu_hypre_set_params()
 {
 }
 
 inline void
-hypre_finalize()
+nalu_hypre_finalize()
 {
 }
 
