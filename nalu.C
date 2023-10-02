@@ -44,6 +44,12 @@
 
 #include "master_element/MasterElementRepo.h"
 
+#include "master_element/MasterElementRepo.h"
+
+#if defined(KOKKOS_ENABLE_HIP)
+#include <hip/hip_runtime.h>
+#endif
+
 static std::string
 human_bytes_double(double bytes)
 {
@@ -71,6 +77,10 @@ int
 main(int argc, char** argv)
 {
   namespace version = sierra::nalu::version;
+
+#if defined(KOKKOS_ENABLE_HIP)
+  hipInit(0);
+#endif
 
   // start up MPI
   if (MPI_SUCCESS != MPI_Init(&argc, &argv)) {
