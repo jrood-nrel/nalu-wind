@@ -95,12 +95,7 @@ endif()
 set(CMAKE_PREFIX_PATH ${Trilinos_DIR} ${CMAKE_PREFIX_PATH})
 find_package(Trilinos QUIET REQUIRED)
 message(STATUS "Found Trilinos = ${Trilinos_LIBRARY_DIRS}")
-target_link_libraries(nalu PUBLIC ${Trilinos_LIBRARIES})
-target_include_directories(nalu SYSTEM PUBLIC ${Trilinos_INCLUDE_DIRS})
-target_include_directories(nalu SYSTEM PUBLIC ${Trilinos_TPL_INCLUDE_DIRS})
-if(Trilinos_BUILD_SHARED_LIBS)
-  set(BUILD_SHARED_LIBS ON)
-endif()
+target_link_libraries(nalu PUBLIC Trilinos::all_libs)
 
 ############################ BOOST #####################################
 if(ENABLE_BOOST)
